@@ -70,7 +70,12 @@ export async function generateRoasts(
       body: JSON.stringify(body),
       signal: controller.signal,
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      // Temporary diagnostic: surface why Gemini rejected us (no key logged).
+      const errBody = await res.text().catch(() => '');
+      console.warn(`[gemini] status=${res.status} model=${MODEL} body=${errBody.slice(0, 300)}`);
+      return [];
+    }
     const data = (await res.json()) as {
       candidates?: { content?: { parts?: { text?: string }[] } }[];
     };
