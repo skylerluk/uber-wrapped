@@ -1,0 +1,5 @@
+# Only the server is needed in the image; exclude everything else from the
+# build context (the frontend at repo root, node_modules, etc.).
+*
+!server
+server/node_modules
