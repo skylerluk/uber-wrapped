@@ -48,3 +48,11 @@ Downloaded from Uber's Privacy Center. Inside the zip is a `Rider/` folder with 
 - **Phase 6 — Premium design pass:** the Apple/Stripe/Uber polish — custom components, motion, grain, share card, final design QA. → `phase-6-premium-design.md`
 
 > Build correctness first (Phases 1–5), then make it gorgeous (Phase 6). Don't gold-plate components before the data and flow are proven.
+
+## Follow-on feature: Timeframe selection & All-Time Wrapped
+Built **after** Phases 0–6 are done. Adds a "Pick your Wrapped" screen so users with multiple years can choose a specific year or (default) **All-Time** — the flagship, most interesting view. Scoped into its own 4-part series:
+- **Overview:** `feature-timeframes-overview.md`
+- **Part 1 — Data & insights:** timeframe-aware engine, per-year + all-time, YoY/peak/milestones. → `feature-timeframes-1-data.md`
+- **Part 2 — Picker screen & navigation:** the chooser + timeframe switching without re-upload. → `feature-timeframes-2-picker.md`
+- **Part 3 — All-Time experience:** flagship scenes, longitudinal facts, timeline motif. → `feature-timeframes-3-alltime.md`
+- **Part 4 — Design & motion polish:** premium finale pass on picker + all-time. → `feature-timeframes-4-design.md`

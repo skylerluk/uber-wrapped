@@ -5,14 +5,13 @@ interface LandingProps {
   error?: string | null;
 }
 
-// Stub of the "How to download your Uber data" guide. Full version: Phase 5.
 const HOW_TO_STEPS = [
   'Open your Uber account',
   'Go to the Privacy Center',
-  'Tap "See Summary" / "Download your data"',
-  'Select "Trips" and request the export',
-  'Open the email from Uber, download the .zip',
-  'Drop the .zip above — it never leaves your browser',
+  'Tap "See Summary" (or "Download your data")',
+  'Choose "View my trips"',
+  'Open the top-right burger menu',
+  'Tap "Download"',
 ];
 
 export function Landing({ onFile, error }: LandingProps) {
@@ -51,6 +50,19 @@ export function Landing({ onFile, error }: LandingProps) {
             </li>
           ))}
         </ol>
+        <p className="mt-4 text-xs leading-relaxed text-dim">
+          Uber emails your export as a <code>.zip</code> — it can take a while to arrive
+          (sometimes up to 24–48 hours). When it lands, just drop the whole zip above —
+          no need to unzip it.{' '}
+          <a
+            href="https://privacy.uber.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text underline"
+          >
+            Open Uber Privacy Center →
+          </a>
+        </p>
       </details>
     </main>
   );

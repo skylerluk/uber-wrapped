@@ -14,12 +14,16 @@ const allowedOrigins = (process.env.ALLOWED_ORIGIN ?? '')
   .map((s) => s.trim())
   .filter(Boolean);
 const isDevOrigin = (origin: string) => /^https?:\/\/localhost(:\d+)?$/.test(origin);
+// This project's Vercel deploys (production + previews), e.g.
+// uber-wrapped.vercel.app, uber-wrapped-git-main-*.vercel.app, uber-wrapped-<hash>-*.vercel.app
+const isProjectVercel = (origin: string) =>
+  /^https:\/\/uber-wrapped[a-z0-9-]*\.vercel\.app$/.test(origin);
 
 app.use(
   cors({
     origin(origin, cb) {
       // Allow same-origin / curl (no Origin header) and approved origins.
-      if (!origin || isDevOrigin(origin) || allowedOrigins.includes(origin)) {
+      if (!origin || isDevOrigin(origin) || isProjectVercel(origin) || allowedOrigins.includes(origin)) {
         cb(null, true);
       } else {
         cb(null, false);
