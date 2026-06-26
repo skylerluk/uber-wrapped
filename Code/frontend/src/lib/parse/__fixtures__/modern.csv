@@ -1,0 +1,4 @@
+City,Product Type,Trip or Order Status,Request Time,Begin Trip Time,Begin Trip Address,Dropoff Time,Dropoff Address,Distance (miles),Fare Amount,Fare Currency
+San Francisco,UberX,COMPLETED,2023-08-14 19:40:00 +0000 UTC,2023-08-14 19:42:00 +0000 UTC,1 Market St,2023-08-14 20:01:00 +0000 UTC,500 Howard St,3.20,18.50,USD
+Oakland,UberX,COMPLETED,2023-09-02 08:10:00 +0000 UTC,2023-09-02 08:12:00 +0000 UTC,Home,2023-09-02 08:40:00 +0000 UTC,Work,7.10,24.00,USD
+San Francisco,Comfort,CANCELED,2023-10-01 12:00:00 +0000 UTC,,,,,0,0,USD

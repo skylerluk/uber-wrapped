@@ -1,0 +1,4 @@
+city,Trip Status,Pickup Time,Distance,Fare,Currency
+New York,completed,2021-01-05T22:15:00Z,2.4,"1,234.50",USD
+New York,completed,2021-02-11T23:00:00Z,1.1,9.99,USD
+Newark,rider_canceled,2021-02-12T10:00:00Z,0,,USD

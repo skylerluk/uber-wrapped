@@ -1,0 +1,5 @@
+City,Trip or Order Status,Begin Trip Time,Distance (miles),Fare Amount,Fare Currency
+London,COMPLETED,2022-06-01 09:00:00 +0100 UTC,4.0,£12.30,GBP
+London,UNFULFILLED,2022-06-02 09:00:00 +0100 UTC,0,0,GBP
+London,completed,not-a-date,1.0,,GBP
+Manchester,COMPLETED,2022-07-15 18:30:00 +0100 UTC,5.5,"£1,000.00",GBP
