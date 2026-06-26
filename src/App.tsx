@@ -1,13 +1,16 @@
-import { useCallback, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useMemo, useState } from 'react';
 import { parseUberExport } from './lib/parse';
 import { buildInsights, toAggregatePayload } from './lib/insights';
 import { fetchAiRoasts } from './lib/api/insights';
 import { Landing } from './components/Landing';
 import { Loading } from './components/Loading';
-import { ShareSheet } from './components/ShareCard';
-import { Story } from './scenes/Story';
-import { Dashboard } from './scenes/Dashboard';
 import type { Insights, Roast } from './types/insights';
+
+// Lazy-load heavy, post-landing surfaces (Recharts, html-to-image) so the
+// initial landing bundle stays lean.
+const Story = lazy(() => import('./scenes/Story').then((m) => ({ default: m.Story })));
+const Dashboard = lazy(() => import('./scenes/Dashboard').then((m) => ({ default: m.Dashboard })));
+const ShareSheet = lazy(() => import('./components/ShareCard').then((m) => ({ default: m.ShareSheet })));
 
 type AppState =
   | { phase: 'idle'; error: string | null }
@@ -79,14 +82,16 @@ function App() {
 
   const insights = state.phase === 'story' || state.phase === 'dashboard' ? state.insights : null;
 
+  const fallback = (
+    <main className="flex min-h-[100dvh] items-center justify-center">
+      <Loading />
+    </main>
+  );
+
   return (
-    <>
+    <Suspense fallback={fallback}>
       {state.phase === 'idle' && <Landing onFile={handleFile} error={state.error} />}
-      {state.phase === 'parsing' && (
-        <main className="flex min-h-[100dvh] items-center justify-center">
-          <Loading />
-        </main>
-      )}
+      {state.phase === 'parsing' && fallback}
       {state.phase === 'story' && <Story insights={state.insights} actions={storyActions} />}
       {state.phase === 'dashboard' && (
         <Dashboard
@@ -99,7 +104,7 @@ function App() {
         />
       )}
       {sharing && insights && <ShareSheet insights={insights} onClose={() => setSharing(false)} />}
-    </>
+    </Suspense>
   );
 }
 
