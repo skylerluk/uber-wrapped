@@ -74,7 +74,7 @@ The frontend and backend deploy independently from the same repo root.
   image (`npm ci --omit=dev`) can run `npm start`.
 - **Env vars (set in Railway):**
   - `GEMINI_KEY` — Gemini API key (required for AI roasts; app falls back without it).
-  - `GEMINI_MODEL` — optional, defaults to `gemini-2.0-flash`.
+  - `GEMINI_MODEL` — optional, defaults to `gemini-2.5-flash`.
   - `ALLOWED_ORIGIN` — optional extra CORS origins (comma-separated). This
     project's `*.vercel.app` domains and `localhost` are always allowed.
 - Railway provides `PORT`; the server binds it automatically.

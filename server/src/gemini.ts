@@ -9,7 +9,7 @@ export interface AiRoast {
   sub: string;
 }
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const TIMEOUT_MS = 6000;
 
 const SYSTEM_INSTRUCTION = `You are the voice of "Uber Wrapped." Given anonymized stats about someone's Uber spending, write short, witty, screenshot-worthy roasts. Playful and clever, never cruel, never about financial hardship. Tease the habit, not the person. No emojis unless they really land. Each line's headline must be <= 120 characters.
