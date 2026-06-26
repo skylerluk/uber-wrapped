@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { parseUberExport } from './lib/parse';
+import { buildInsights } from './lib/insights';
 import type { ParseResult } from './types/trip';
+import type { Insights } from './types/insights';
 
 type Status =
   | { kind: 'idle' }
@@ -23,6 +25,16 @@ function App() {
       const buffer = await file.arrayBuffer();
       const outcome = await parseUberExport(buffer);
       if (outcome.ok) {
+        // Dev harness: build + log full insights so we can eyeball roasts on real data.
+        const insights: Insights = buildInsights(
+          outcome.result.allTrips,
+          outcome.result.completedTrips,
+        );
+        (window as unknown as { __uberInsights?: Insights }).__uberInsights = insights;
+        // eslint-disable-next-line no-console
+        console.log('Uber Wrapped — insights', insights);
+        // eslint-disable-next-line no-console
+        console.table(insights.roasts.map((r) => ({ headline: r.headline, funScore: r.funScore })));
         setStatus({ kind: 'done', result: outcome.result });
       } else {
         setStatus({ kind: 'error', message: outcome.message });
