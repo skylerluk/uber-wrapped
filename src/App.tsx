@@ -3,9 +3,10 @@ import { parseUberExport } from './lib/parse';
 import { buildInsights, toAggregatePayload } from './lib/insights';
 import { fetchAiRoasts } from './lib/api/insights';
 import { Landing } from './components/Landing';
+import { Loading } from './components/Loading';
+import { ShareSheet } from './components/ShareCard';
 import { Story } from './scenes/Story';
 import { Dashboard } from './scenes/Dashboard';
-import { formatMoney } from './lib/format';
 import type { Insights, Roast } from './types/insights';
 
 type AppState =
@@ -16,6 +17,7 @@ type AppState =
 
 function App() {
   const [state, setState] = useState<AppState>({ phase: 'idle', error: null });
+  const [sharing, setSharing] = useState(false);
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.zip')) {
@@ -54,21 +56,11 @@ function App() {
     }
   }, []);
 
-  const restart = useCallback(() => setState({ phase: 'idle', error: null }), []);
-
-  const share = useCallback(() => {
-    setState((prev) => {
-      if (prev.phase !== 'story' && prev.phase !== 'dashboard') return prev;
-      const s = prev.insights.stats;
-      const text = `My Uber Wrapped: ${s.totalRides} rides, ${formatMoney(s.totalSpend, s.currency)} spent across ${s.dateRange.label}. 🚗`;
-      if (navigator.share) {
-        void navigator.share({ title: 'Uber Wrapped', text }).catch(() => {});
-      } else if (navigator.clipboard) {
-        void navigator.clipboard.writeText(text);
-      }
-      return prev;
-    });
+  const restart = useCallback(() => {
+    setSharing(false);
+    setState({ phase: 'idle', error: null });
   }, []);
+  const openShare = useCallback(() => setSharing(true), []);
 
   const goDashboard = useCallback(
     () => setState((prev) => (prev.phase === 'story' ? { ...prev, phase: 'dashboard' } : prev)),
@@ -81,32 +73,34 @@ function App() {
 
   // Stable actions object so the story's scene list doesn't rebuild needlessly.
   const storyActions = useMemo(
-    () => ({ onDashboard: goDashboard, onShare: share, onRestart: restart }),
-    [goDashboard, share, restart],
+    () => ({ onDashboard: goDashboard, onShare: openShare, onRestart: restart }),
+    [goDashboard, openShare, restart],
   );
 
-  switch (state.phase) {
-    case 'idle':
-      return <Landing onFile={handleFile} error={state.error} />;
-    case 'parsing':
-      return (
-        <main className="flex min-h-screen items-center justify-center">
-          <p className="animate-pulse text-dim">Crunching your rides…</p>
+  const insights = state.phase === 'story' || state.phase === 'dashboard' ? state.insights : null;
+
+  return (
+    <>
+      {state.phase === 'idle' && <Landing onFile={handleFile} error={state.error} />}
+      {state.phase === 'parsing' && (
+        <main className="flex min-h-[100dvh] items-center justify-center">
+          <Loading />
         </main>
-      );
-    case 'story':
-      return <Story insights={state.insights} actions={storyActions} />;
-    case 'dashboard':
-      return (
+      )}
+      {state.phase === 'story' && <Story insights={state.insights} actions={storyActions} />}
+      {state.phase === 'dashboard' && (
         <Dashboard
           insights={state.insights}
           aiRoasts={state.aiRoasts}
           aiPending={state.aiPending}
           onRestart={restart}
           onReplay={goStory}
+          onShare={openShare}
         />
-      );
-  }
+      )}
+      {sharing && insights && <ShareSheet insights={insights} onClose={() => setSharing(false)} />}
+    </>
+  );
 }
 
 export default App;

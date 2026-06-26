@@ -10,18 +10,19 @@ interface DashboardProps {
   aiPending?: boolean;
   onRestart: () => void;
   onReplay: () => void;
+  onShare: () => void;
 }
 
 function Card({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className={`rounded-2xl border border-hairline bg-surface p-5 ${className ?? ''}`}>
+    <section className={`elevated rounded-[20px] border border-hairline bg-surface p-5 ${className ?? ''}`}>
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-dim">{title}</h2>
       {children}
     </section>
   );
 }
 
-export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onReplay }: DashboardProps) {
+export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onReplay, onShare }: DashboardProps) {
   const { stats } = insights;
   const roasts = [...insights.roasts, ...aiRoasts].sort((a, b) => b.funScore - a.funScore);
   const maxCityRides = Math.max(1, ...stats.cityBreakdown.map((c) => c.rides));
@@ -33,7 +34,13 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
           <h1 className="font-display text-4xl font-black tracking-tight sm:text-5xl">Your Uber Wrapped</h1>
           <p className="mt-1 text-dim">{stats.dateRange.label}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={onShare}
+            className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black transition-transform hover:scale-[1.04] active:scale-95"
+          >
+            Share
+          </button>
           <button
             onClick={onReplay}
             className="rounded-full border border-hairline px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-2"
@@ -42,7 +49,7 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
           </button>
           <button
             onClick={onRestart}
-            className="rounded-full border border-hairline px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-2"
+            className="rounded-full border border-hairline px-5 py-2.5 text-sm font-semibold text-dim transition-colors hover:bg-surface-2 hover:text-text"
           >
             Try another zip
           </button>
@@ -130,7 +137,10 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
             </div>
           )}
           {roasts.map((r) => (
-            <div key={r.id} className="rounded-xl border border-hairline bg-surface-2 p-4">
+            <div
+              key={r.id}
+              className="rounded-2xl border border-hairline bg-surface-2 p-4 transition-transform duration-200 hover:-translate-y-0.5 hover:border-hairline-strong"
+            >
               <p className="text-2xl">{r.emoji}</p>
               <p className="mt-2 font-semibold leading-snug">{r.headline}</p>
               <p className="mt-1 text-xs text-dim">{r.sub}</p>

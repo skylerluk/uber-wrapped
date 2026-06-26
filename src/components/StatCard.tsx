@@ -13,9 +13,9 @@ interface StatCardProps {
 
 export function StatCard({ label, value, format, display, hint }: StatCardProps) {
   return (
-    <div className="rounded-2xl border border-hairline bg-surface p-5">
+    <div className="elevated rounded-[20px] border border-hairline bg-surface p-5 transition-transform duration-200 hover:-translate-y-0.5 hover:border-hairline-strong">
       <p className="text-xs font-medium uppercase tracking-wider text-dim">{label}</p>
-      <p className="mt-2 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
+      <p className="mt-2 display-number text-3xl sm:text-4xl">
         {display ?? (value != null ? <CountUp value={value} format={format} /> : '—')}
       </p>
       {hint && <p className="mt-1 text-xs text-dim">{hint}</p>}
