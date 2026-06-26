@@ -80,7 +80,8 @@ export type RoastCategory =
   | 'distance'
   | 'time'
   | 'behavior'
-  | 'superlative';
+  | 'superlative'
+  | 'ai';
 
 export type RoastSeverity = 'light' | 'medium' | 'spicy';
 

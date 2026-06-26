@@ -1,17 +1,18 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { parseUberExport } from './lib/parse';
-import { buildInsights } from './lib/insights';
+import { buildInsights, toAggregatePayload } from './lib/insights';
+import { fetchAiRoasts } from './lib/api/insights';
 import { Landing } from './components/Landing';
 import { Story } from './scenes/Story';
 import { Dashboard } from './scenes/Dashboard';
 import { formatMoney } from './lib/format';
-import type { Insights } from './types/insights';
+import type { Insights, Roast } from './types/insights';
 
 type AppState =
   | { phase: 'idle'; error: string | null }
   | { phase: 'parsing' }
-  | { phase: 'story'; insights: Insights }
-  | { phase: 'dashboard'; insights: Insights };
+  | { phase: 'story'; insights: Insights; aiRoasts: Roast[]; aiPending: boolean }
+  | { phase: 'dashboard'; insights: Insights; aiRoasts: Roast[]; aiPending: boolean };
 
 function App() {
   const [state, setState] = useState<AppState>({ phase: 'idle', error: null });
@@ -34,7 +35,17 @@ function App() {
         setState({ phase: 'idle', error: 'We parsed the file but found no completed rides to wrap.' });
         return;
       }
-      setState({ phase: 'story', insights });
+      setState({ phase: 'story', insights, aiRoasts: [], aiPending: true });
+
+      // Fire-and-forget: AI roasts are folded into the dashboard wall when they
+      // arrive. The story's `insights` is never mutated, so scenes stay stable.
+      void fetchAiRoasts(toAggregatePayload(insights)).then((aiRoasts) => {
+        setState((prev) => {
+          if (prev.phase !== 'story' && prev.phase !== 'dashboard') return prev;
+          if (prev.insights.meta.generatedAt !== insights.meta.generatedAt) return prev;
+          return { ...prev, aiRoasts, aiPending: false };
+        });
+      });
     } catch (err) {
       setState({
         phase: 'idle',
@@ -46,15 +57,33 @@ function App() {
   const restart = useCallback(() => setState({ phase: 'idle', error: null }), []);
 
   const share = useCallback(() => {
-    if (state.phase !== 'story' && state.phase !== 'dashboard') return;
-    const s = state.insights.stats;
-    const text = `My Uber Wrapped: ${s.totalRides} rides, ${formatMoney(s.totalSpend, s.currency)} spent across ${s.dateRange.label}. 🚗`;
-    if (navigator.share) {
-      void navigator.share({ title: 'Uber Wrapped', text }).catch(() => {});
-    } else if (navigator.clipboard) {
-      void navigator.clipboard.writeText(text);
-    }
-  }, [state]);
+    setState((prev) => {
+      if (prev.phase !== 'story' && prev.phase !== 'dashboard') return prev;
+      const s = prev.insights.stats;
+      const text = `My Uber Wrapped: ${s.totalRides} rides, ${formatMoney(s.totalSpend, s.currency)} spent across ${s.dateRange.label}. 🚗`;
+      if (navigator.share) {
+        void navigator.share({ title: 'Uber Wrapped', text }).catch(() => {});
+      } else if (navigator.clipboard) {
+        void navigator.clipboard.writeText(text);
+      }
+      return prev;
+    });
+  }, []);
+
+  const goDashboard = useCallback(
+    () => setState((prev) => (prev.phase === 'story' ? { ...prev, phase: 'dashboard' } : prev)),
+    [],
+  );
+  const goStory = useCallback(
+    () => setState((prev) => (prev.phase === 'dashboard' ? { ...prev, phase: 'story' } : prev)),
+    [],
+  );
+
+  // Stable actions object so the story's scene list doesn't rebuild needlessly.
+  const storyActions = useMemo(
+    () => ({ onDashboard: goDashboard, onShare: share, onRestart: restart }),
+    [goDashboard, share, restart],
+  );
 
   switch (state.phase) {
     case 'idle':
@@ -66,22 +95,15 @@ function App() {
         </main>
       );
     case 'story':
-      return (
-        <Story
-          insights={state.insights}
-          actions={{
-            onDashboard: () => setState({ phase: 'dashboard', insights: state.insights }),
-            onShare: share,
-            onRestart: restart,
-          }}
-        />
-      );
+      return <Story insights={state.insights} actions={storyActions} />;
     case 'dashboard':
       return (
         <Dashboard
           insights={state.insights}
+          aiRoasts={state.aiRoasts}
+          aiPending={state.aiPending}
           onRestart={restart}
-          onReplay={() => setState({ phase: 'story', insights: state.insights })}
+          onReplay={goStory}
         />
       );
   }

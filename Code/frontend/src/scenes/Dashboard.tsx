@@ -1,4 +1,4 @@
-import type { Insights } from '../types/insights';
+import type { Insights, Roast } from '../types/insights';
 import { StatCard } from '../components/StatCard';
 import { SpendOverTime } from '../components/charts/SpendOverTime';
 import { RidesByHour } from '../components/charts/RidesByHour';
@@ -6,6 +6,8 @@ import { formatMoney, formatNumber, formatDate } from '../lib/format';
 
 interface DashboardProps {
   insights: Insights;
+  aiRoasts?: Roast[];
+  aiPending?: boolean;
   onRestart: () => void;
   onReplay: () => void;
 }
@@ -19,8 +21,9 @@ function Card({ title, children, className }: { title: string; children: React.R
   );
 }
 
-export function Dashboard({ insights, onRestart, onReplay }: DashboardProps) {
-  const { stats, roasts } = insights;
+export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onReplay }: DashboardProps) {
+  const { stats } = insights;
+  const roasts = [...insights.roasts, ...aiRoasts].sort((a, b) => b.funScore - a.funScore);
   const maxCityRides = Math.max(1, ...stats.cityBreakdown.map((c) => c.rides));
 
   return (
@@ -121,6 +124,11 @@ export function Dashboard({ insights, onRestart, onReplay }: DashboardProps) {
       {/* Roast wall */}
       <Card title="Fun facts & roasts">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {aiPending && (
+            <div className="flex animate-pulse items-center justify-center rounded-xl border border-dashed border-hairline bg-surface-2 p-4 text-sm text-dim">
+              ✨ summoning more roasts…
+            </div>
+          )}
           {roasts.map((r) => (
             <div key={r.id} className="rounded-xl border border-hairline bg-surface-2 p-4">
               <p className="text-2xl">{r.emoji}</p>
