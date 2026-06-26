@@ -58,7 +58,14 @@ export async function generateRoasts(
   const body = {
     system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
     contents: [{ role: 'user', parts: [{ text: buildUserPrompt(payload, alreadyUsed) }] }],
-    generationConfig: { temperature: 1.0, maxOutputTokens: 600, responseMimeType: 'application/json' },
+    generationConfig: {
+      temperature: 1.0,
+      maxOutputTokens: 1024,
+      responseMimeType: 'application/json',
+      // gemini-2.5-flash enables "thinking" by default, which would consume the
+      // output-token budget and leave no roast text. Disable it for fast JSON.
+      thinkingConfig: { thinkingBudget: 0 },
+    },
   };
 
   const controller = new AbortController();

@@ -7,11 +7,14 @@ export default {
         bg: 'var(--bg)',
         surface: 'var(--surface)',
         'surface-2': 'var(--surface-2)',
+        'surface-3': 'var(--surface-3)',
         text: 'var(--text)',
         dim: 'var(--text-dim)',
+        faint: 'var(--text-faint)',
       },
       borderColor: {
         hairline: 'var(--border)',
+        'hairline-strong': 'var(--border-strong)',
       },
       fontFamily: {
         display: ['Inter', 'system-ui', 'sans-serif'],
