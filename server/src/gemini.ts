@@ -71,9 +71,9 @@ export async function generateRoasts(
       signal: controller.signal,
     });
     if (!res.ok) {
-      // Temporary diagnostic: surface why Gemini rejected us (no key logged).
-      const errBody = await res.text().catch(() => '');
-      console.warn(`[gemini] status=${res.status} model=${MODEL} body=${errBody.slice(0, 300)}`);
+      // Log the status only (never the key/payload) so quota/auth issues are
+      // visible in ops without leaking anything. App falls back on [].
+      console.warn(`[gemini] non-ok status=${res.status} model=${MODEL}`);
       return [];
     }
     const data = (await res.json()) as {
