@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Insights, Roast } from '../types/insights';
 import { CountUp } from '../components/CountUp';
-import { formatMoney, formatNumber, formatDate } from '../lib/format';
+import { formatMoney, formatDate, pluralize } from '../lib/format';
 import { GRADIENTS, type Gradient } from '../styles/gradients';
 
 export interface SceneActions {
@@ -40,7 +40,7 @@ export function buildScenes(insights: Insights, actions: SceneActions): Scene[] 
     gradient: GRADIENTS.iceIndigo,
     kicker: 'Uber Wrapped',
     headline: <>Let's relive your year in Uber.</>,
-    sub: `${stats.dateRange.label} · ${formatNumber(stats.totalRides)} completed rides`,
+    sub: `${stats.dateRange.label} · ${pluralize(stats.totalRides, 'completed ride')}`,
   });
 
   scenes.push({
@@ -75,7 +75,7 @@ export function buildScenes(insights: Insights, actions: SceneActions): Scene[] 
       gradient: GRADIENTS.orangePink,
       kicker: 'Your home turf',
       headline: stats.topCity.city,
-      sub: `${formatNumber(stats.topCity.rides)} rides started here`,
+      sub: `${pluralize(stats.topCity.rides, 'ride')} started here`,
     });
   }
 

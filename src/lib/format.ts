@@ -18,6 +18,11 @@ export function formatNumber(n: number): string {
   return Math.round(n).toLocaleString('en-US');
 }
 
+/** "1 ride" / "2 rides" — count with a correctly pluralized noun. */
+export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
+  return `${formatNumber(count)} ${count === 1 ? singular : plural}`;
+}
+
 /** "2023-08" -> "Aug '23" */
 export function formatMonthLabel(ym: string): string {
   const [y, m] = ym.split('-').map(Number);
