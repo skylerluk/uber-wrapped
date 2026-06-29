@@ -20,6 +20,8 @@ export interface Scene {
   sub?: ReactNode;
   /** When set, the scene features this roast as a RoastCard. */
   roast?: Roast;
+  /** Arbitrary custom content (e.g. the all-time timeline chart). */
+  custom?: ReactNode;
   /** Outro action row. */
   footer?: ReactNode;
 }
