@@ -31,7 +31,7 @@ float fbm(vec2 p){
   return v;
 }
 float field(vec2 p){
-  float t = uTime * 0.06;
+  float t = uTime * 0.022;
   vec2 q = vec2(fbm(p + vec2(0.0,t)), fbm(p + vec2(5.2,1.3 - t)));
   vec2 r = vec2(fbm(p + 4.0*q + vec2(1.7,9.2) + t), fbm(p + 4.0*q + vec2(8.3,2.8) - t));
   return fbm(p + 4.0*r);

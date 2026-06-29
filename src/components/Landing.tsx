@@ -1,15 +1,12 @@
-import { Suspense, lazy, type ReactNode } from 'react';
+import { Suspense, lazy } from 'react';
 import { motion } from 'framer-motion';
 import { DropZone } from './DropZone';
 import { ChromeTitle } from './landing/ChromeTitle';
 import { Marquee } from './landing/Marquee';
+import { HowTo } from './landing/HowTo';
 
 // Lazy so the OGL shader doesn't block first paint; a chrome poster shows meanwhile.
 const LiquidChromeBackground = lazy(() => import('./landing/LiquidChromeBackground'));
-
-const B = ({ children }: { children: ReactNode }) => (
-  <strong className="font-semibold text-text">{children}</strong>
-);
 
 const POSTER_BG =
   'radial-gradient(120% 90% at 50% 25%, rgba(205,205,214,0.4), transparent 55%), var(--chrome-ramp)';
@@ -18,34 +15,6 @@ interface LandingProps {
   onFile: (file: File) => void;
   error?: string | null;
 }
-
-const HOW_TO_SECTIONS: { title: string; steps: ReactNode[] }[] = [
-  {
-    title: 'Navigate to Privacy Settings',
-    steps: [
-      <>Open the <B>Uber app</B> on your phone.</>,
-      <>Tap the <B>Account</B> tab in the bottom-right corner.</>,
-      <>Select <B>Settings</B> from the menu list.</>,
-      <>Scroll down slightly and tap <B>Privacy &amp; Data</B> (or <B>Privacy</B>).</>,
-    ],
-  },
-  {
-    title: 'Request Your Data',
-    steps: [
-      <>Tap <B>Privacy Center</B>.</>,
-      <>Scroll down to the section titled <B>Your data and privacy</B>.</>,
-      <>Tap <B>Download your data</B>.</>,
-      <>Log in with your <B>Uber password</B> and complete the <B>2-step verification</B> (a code sent via SMS or email).</>,
-    ],
-  },
-  {
-    title: 'Confirm the Export',
-    steps: [
-      <>Review the data types being requested and tap <B>Request data</B>.</>,
-      <>Uber will begin compiling your <code className="text-dim">.zip</code> archive.</>,
-    ],
-  },
-];
 
 export function Landing({ onFile, error }: LandingProps) {
   return (
@@ -114,49 +83,7 @@ export function Landing({ onFile, error }: LandingProps) {
           </p>
         </motion.div>
 
-        <details className="elevated w-full rounded-2xl border border-hairline bg-[#0b0b0ce8] p-5 backdrop-blur-md">
-        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold">
-          How to download your Uber data
-          <span className="text-dim transition-transform">▾</span>
-        </summary>
-        <div className="mt-5 space-y-5">
-          {HOW_TO_SECTIONS.map((section, si) => (
-            <div key={si}>
-              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text">
-                <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-dim">
-                  Step {si + 1}
-                </span>
-                {section.title}
-              </h3>
-              <ol className="space-y-2.5 text-sm text-dim">
-                {section.steps.map((step, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-hairline-strong bg-surface-2 text-[11px] font-semibold tabular-nums text-text">
-                      {i + 1}
-                    </span>
-                    <span className="leading-snug">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3.5 text-xs leading-relaxed text-dim">
-          <B>⚠️ Heads up:</B> Uber typically takes <B>24–48 hours</B> to generate the file. You&apos;ll
-          get an email and an in-app notification when it&apos;s ready. Then download the{' '}
-          <code className="text-dim">.zip</code> to your phone&apos;s Files app and{' '}
-          <B>upload it here</B> — no need to unzip it.{' '}
-          <a
-            href="https://privacy.uber.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-text underline underline-offset-2"
-          >
-            Open Uber Privacy Center →
-          </a>
-        </div>
-      </details>
+        <HowTo />
 
       <footer className="mt-2 flex flex-col items-center gap-1 text-center text-xs text-white/60 [text-shadow:0_1px_10px_rgba(0,0,0,0.95)]">
         <p>Processed entirely in your browser. Nothing uploaded.</p>
