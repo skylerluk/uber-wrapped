@@ -56,27 +56,30 @@ void main(){
   float h  = field(p*sc);
   float hx = field((p + vec2(e,0.0))*sc);
   float hy = field((p + vec2(0.0,e))*sc);
-  vec3 nrm = normalize(vec3(h - hx, h - hy, 0.05));
+  vec3 nrm = normalize(vec3((h - hx) / e, (h - hy) / e, 1.0));
 
-  float fres = pow(1.0 - max(nrm.z, 0.0), 3.0);
-  // gentle chromatic aberration — silver first, color only at the very edges
-  float off = 0.015 + 0.09 * fres;
+  // Brushed chrome driven by the height field itself → real bright/dark metal.
+  float metal = pow(clamp(h * 1.15, 0.0, 1.0), 0.8);
+  float fres = pow(1.0 - max(nrm.z, 0.0), 2.5);
+
+  // chromatic aberration across the metal bands (silver first)
+  float off = 0.04 + 0.10 * fres;
   vec3 col;
-  col.r = chromeEnv(nrm.y + off).r;
-  col.g = chromeEnv(nrm.y).g;
-  col.b = chromeEnv(nrm.y - off).b;
+  col.r = chromeEnv(metal + off).r;
+  col.g = chromeEnv(metal).g;
+  col.b = chromeEnv(metal - off).b;
 
-  // iridescent oil-slick, confined to the sharpest specular fringe only
-  float fringe = smoothstep(0.6, 1.0, fres);
-  vec3 irid = 0.5 + 0.5 * cos(6.2831 * (vec3(0.0,0.33,0.67) + nrm.y + fres*1.4));
-  col = mix(col, col*0.7 + irid*0.6, fringe * 0.35);
+  // crisp specular highlights along steep slopes
+  float spec = pow(max(nrm.y, 0.0), 5.0) + pow(fres, 3.0);
+  col += spec * 0.45;
 
-  float spec = pow(max(nrm.y, 0.0), 8.0);
-  col += spec * 0.35;
+  // iridescent oil-slick, confined to the specular fringe
+  vec3 irid = 0.5 + 0.5 * cos(6.2831 * (vec3(0.0,0.33,0.67) + metal + fres*1.3));
+  col = mix(col, col * 0.7 + irid * 0.6, smoothstep(0.45, 1.0, fres) * 0.4);
 
-  float vig = smoothstep(1.6, 0.15, length(p));
-  col *= mix(0.10, 1.0, vig);
-  col *= (0.45 + 0.55 * h);
+  // gentle vignette into the black base (keeps a visible metal field)
+  float vig = smoothstep(1.7, 0.1, length(p));
+  col *= mix(0.5, 1.05, vig);
 
   gl_FragColor = vec4(col, 1.0);
 }

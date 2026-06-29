@@ -58,18 +58,23 @@ export function DropZone({ onFile, disabled }: DropZoneProps) {
       }}
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
-      className={`group relative isolate w-full cursor-pointer overflow-hidden rounded-[24px] p-[1.5px] ${
+      className={`group relative isolate w-full cursor-pointer overflow-hidden rounded-[24px] p-[2px] ${
         disabled ? 'pointer-events-none opacity-50' : ''
       }`}
     >
-      {/* Traveling metal rim-light (chrome + a touch of iridescence) */}
+      {/* dim chrome base ring so the whole border reads metallic, not just the arc */}
       <div
-        className="rim-light pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none absolute inset-0 rounded-[24px]"
+        style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 40%, rgba(176,107,255,0.12))' }}
+      />
+      {/* Traveling metal rim-light (chrome + iridescence) */}
+      <div
+        className="rim-light pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[160%] -translate-x-1/2 -translate-y-1/2"
         style={{
           background:
-            'conic-gradient(from 0deg, transparent 0deg, rgba(255,255,255,0.9) 30deg, #18e0ff 55deg, #ff2d6b 75deg, transparent 110deg, transparent 360deg)',
-          animation: 'rim-rotate 6s linear infinite',
-          opacity: dragging ? 1 : 0.55,
+            'conic-gradient(from 0deg, transparent 0deg, rgba(255,255,255,1) 28deg, #18e0ff 50deg, #b06bff 65deg, #ff2d6b 80deg, transparent 120deg, transparent 360deg)',
+          animation: 'rim-rotate 5s linear infinite',
+          opacity: dragging ? 1 : 0.9,
           transition: 'opacity 0.3s',
         }}
       />

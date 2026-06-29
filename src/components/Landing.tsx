@@ -49,7 +49,7 @@ const HOW_TO_SECTIONS: { title: string; steps: ReactNode[] }[] = [
 
 export function Landing({ onFile, error }: LandingProps) {
   return (
-    <main className="relative min-h-[100dvh] overflow-hidden">
+    <main className="relative isolate min-h-[100dvh] overflow-hidden bg-bg">
       {/* Liquid-chrome WebGL background (poster while the module loads) */}
       <Suspense
         fallback={<div className="absolute inset-0 -z-10" style={{ background: POSTER_BG, opacity: 0.7 }} />}
@@ -57,30 +57,31 @@ export function Landing({ onFile, error }: LandingProps) {
         <LiquidChromeBackground />
       </Suspense>
 
-      {/* Counter-scrolling marquees, faint, behind the hero */}
-      <div className="pointer-events-none absolute inset-0 -z-[5] flex flex-col justify-between py-12">
+      {/* Counter-scrolling marquees behind the hero */}
+      <div className="pointer-events-none absolute inset-0 -z-[5] flex flex-col justify-between py-10">
         <Marquee
           items={['UBER WRAPPED']}
-          speed={38}
-          className="display-number text-[clamp(3rem,11vw,8rem)] leading-none text-white/[0.06]"
+          speed={32}
+          className="display-number text-[clamp(3.5rem,12vw,9rem)] leading-none text-white/[0.16]"
         />
         <Marquee
           items={['RIDES', 'EATS', 'SURGE', '2 A.M.', 'LATE NIGHTS', 'AIRPORT RUNS']}
           direction="right"
-          speed={30}
-          className="text-[clamp(1rem,3vw,2rem)] font-bold uppercase tracking-[0.3em] text-white/[0.05]"
+          speed={26}
+          className="text-[clamp(1.1rem,3.2vw,2.2rem)] font-bold uppercase tracking-[0.3em] text-white/[0.12]"
         />
       </div>
 
       {/* Grain above the shader so the chrome never looks flat */}
       <div className="grain pointer-events-none absolute inset-0 -z-[4] opacity-50 mix-blend-overlay" />
 
-      {/* Dark scrim behind the hero for text legibility on bright chrome */}
+      {/* Scrim biased to the upper hero (title + subtitle) for legibility, while
+          leaving the liquid-chrome shader visible around the edges and lower area. */}
       <div
         className="pointer-events-none absolute inset-0 -z-[3]"
         style={{
           background:
-            'radial-gradient(72% 62% at 50% 38%, rgba(0,0,0,0.86), rgba(0,0,0,0.45) 58%, transparent 82%)',
+            'radial-gradient(75% 55% at 50% 30%, rgba(0,0,0,0.8), rgba(0,0,0,0.42) 55%, transparent 80%)',
         }}
       />
 
