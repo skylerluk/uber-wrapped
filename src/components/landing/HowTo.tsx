@@ -98,7 +98,7 @@ export function HowTo() {
             className="absolute inset-y-0 left-0 w-[3px]"
             style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.7), #f59e0b)' }}
           />
-          <B>⚠️ Heads up:</B> Uber typically takes <B>24–48 hours</B> to generate the file. You&apos;ll
+          <B>Heads up:</B> Uber typically takes <B>24–48 hours</B> to generate the file. You&apos;ll
           get an email and an in-app notification when it&apos;s ready. Then download the{' '}
           <code className="text-dim">.zip</code> to your phone&apos;s Files app and <B>upload it here</B>{' '}
           — no need to unzip it.{' '}

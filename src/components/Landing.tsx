@@ -18,43 +18,46 @@ interface LandingProps {
 
 export function Landing({ onFile, error }: LandingProps) {
   return (
-    <main className="relative isolate min-h-[100dvh] overflow-hidden bg-bg">
-      {/* Liquid-chrome WebGL background (poster while the module loads) */}
-      <Suspense
-        fallback={<div className="absolute inset-0 -z-10" style={{ background: POSTER_BG, opacity: 0.7 }} />}
-      >
-        <LiquidChromeBackground />
-      </Suspense>
+    <div className="relative min-h-[100dvh] bg-bg">
+      {/* Fixed full-viewport liquid-chrome backdrop — always fills the screen,
+          even as the content (e.g. the expanded how-to) scrolls over it. */}
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        {/* Liquid-chrome WebGL background (poster while the module loads) */}
+        <Suspense
+          fallback={<div className="absolute inset-0 -z-10" style={{ background: POSTER_BG, opacity: 0.7 }} />}
+        >
+          <LiquidChromeBackground />
+        </Suspense>
 
-      {/* Counter-scrolling marquees behind the hero */}
-      <div className="pointer-events-none absolute inset-0 -z-[5] flex flex-col justify-between py-10">
-        <Marquee
-          items={['UBER WRAPPED']}
-          speed={32}
-          className="display-number text-[clamp(3.5rem,12vw,9rem)] leading-none text-white/[0.16]"
-        />
-        <Marquee
-          items={['RIDES', 'EATS', 'SURGE', '2 A.M.', 'LATE NIGHTS', 'AIRPORT RUNS']}
-          direction="right"
-          speed={26}
-          className="text-[clamp(1.1rem,3.2vw,2.2rem)] font-bold uppercase tracking-[0.3em] text-white/[0.12]"
+        {/* Counter-scrolling marquees */}
+        <div className="pointer-events-none absolute inset-0 flex flex-col justify-between py-10">
+          <Marquee
+            items={['UBER WRAPPED']}
+            speed={32}
+            className="display-number text-[clamp(3.5rem,12vw,9rem)] leading-none text-white/[0.16]"
+          />
+          <Marquee
+            items={['RIDES', 'EATS', 'SURGE', '2 A.M.', 'LATE NIGHTS', 'AIRPORT RUNS']}
+            direction="right"
+            speed={26}
+            className="text-[clamp(1.1rem,3.2vw,2.2rem)] font-bold uppercase tracking-[0.3em] text-white/[0.12]"
+          />
+        </div>
+
+        {/* Grain above the shader so the chrome never looks flat */}
+        <div className="grain pointer-events-none absolute inset-0 opacity-50 mix-blend-overlay" />
+
+        {/* Scrim for hero legibility, leaving the shader visible elsewhere */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(75% 55% at 50% 30%, rgba(0,0,0,0.8), rgba(0,0,0,0.42) 55%, transparent 80%)',
+          }}
         />
       </div>
 
-      {/* Grain above the shader so the chrome never looks flat */}
-      <div className="grain pointer-events-none absolute inset-0 -z-[4] opacity-50 mix-blend-overlay" />
-
-      {/* Scrim biased to the upper hero (title + subtitle) for legibility, while
-          leaving the liquid-chrome shader visible around the edges and lower area. */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-[3]"
-        style={{
-          background:
-            'radial-gradient(75% 55% at 50% 30%, rgba(0,0,0,0.8), rgba(0,0,0,0.42) 55%, transparent 80%)',
-        }}
-      />
-
-      <div className="mx-auto flex min-h-[100dvh] max-w-xl flex-col items-center justify-center gap-8 px-6 py-16">
+      <main className="relative z-10 mx-auto flex min-h-[100dvh] max-w-xl flex-col items-center justify-center gap-8 px-6 py-16">
         <header className="text-center">
           <ChromeTitle />
           <motion.p
@@ -96,7 +99,7 @@ export function Landing({ onFile, error }: LandingProps) {
           View source on GitHub
         </a>
       </footer>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
