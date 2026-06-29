@@ -128,7 +128,20 @@ function fakeTrip(over: Partial<Trip> = {}): Trip {
 }
 
 describe('privacy boundary (rides + eats payload)', () => {
-  const trips = [fakeTrip(), fakeTrip({ beginTime: new Date('2025-04-02T03:00:00Z'), beginTimeLocal: new Date('2025-04-02T03:00:00Z') })];
+  // Includes a short-paid-walk trip (0.46 mi / $13.90) whose addresses must
+  // surface in the client-side roast but NEVER in the payload.
+  const trips = [
+    fakeTrip(),
+    fakeTrip({ beginTime: new Date('2025-04-02T03:00:00Z'), beginTimeLocal: new Date('2025-04-02T03:00:00Z') }),
+    fakeTrip({
+      fareAmount: 13.9,
+      distanceMiles: 0.46,
+      beginAddress: '742 Evergreen Terrace',
+      dropoffAddress: '31 Spooner Street',
+      beginTime: new Date('2025-05-01T18:00:00Z'),
+      beginTimeLocal: new Date('2025-05-01T18:00:00Z'),
+    }),
+  ];
   const parsed = parseEatsCsv(EATS_CSV);
   if (!parsed.ok) throw new Error('parse failed');
   const reputation: Reputation = {
@@ -138,7 +151,10 @@ describe('privacy boundary (rides + eats payload)', () => {
     totalRatings: 404,
   };
 
-  const insights = buildInsights(trips, trips, { kind: 'all' }, { eatsOrders: parsed.result.orders });
+  const insights = buildInsights(trips, trips, { kind: 'all' }, {
+    eatsOrders: parsed.result.orders,
+    reputation,
+  });
   const payload = toAggregatePayload(insights, reputation);
   const json = JSON.stringify(payload);
 
@@ -149,9 +165,20 @@ describe('privacy boundary (rides + eats payload)', () => {
     expect(payload.rating).toBe(4.7);
   });
 
-  it('never leaks addresses, coordinates, or card data', () => {
+  it('generates the signature 1-star + short-paid-walk roasts (client-side)', () => {
+    const ids = insights.roasts.map((r) => r.id);
+    expect(ids).toContain('rides-rating-onestar');
+    expect(ids).toContain('rides-short-paid-walk');
+    const walk = insights.roasts.find((r) => r.id === 'rides-short-paid-walk')!;
+    // The address IS allowed in the client-side roast copy.
+    expect(walk.sub).toContain('Evergreen Terrace');
+  });
+
+  it('never leaks addresses, coordinates, or card data into the payload', () => {
     expect(json).not.toContain('Pennsylvania');
     expect(json).not.toContain('Fifth Avenue');
+    expect(json).not.toContain('Evergreen Terrace'); // short-walk addresses
+    expect(json).not.toContain('Spooner Street');
     expect(json).not.toContain('4242');
     expect(json).not.toMatch(/-?\d{1,3}\.\d{4,}/); // coordinate-like
     // No raw ratings distribution / one-star counts (only the rating number).

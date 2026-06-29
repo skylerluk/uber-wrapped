@@ -196,15 +196,20 @@ function mostExpensiveRoast(stats: Stats): Roast | null {
   const t = stats.mostExpensiveTrip;
   if (!t || t.amount == null || t.amount <= 0) return null;
   const where = t.city ? ` in ${t.city}` : '';
+  // The route carries addresses — kept client-side only (this Roast is never
+  // serialized into the AI payload; superlatives are excluded from comparisons).
+  const sub = t.route
+    ? `${t.route} — the most expensive thing you bought that day was the ride home.`
+    : `One trip${where} that cost more than some people's weekly groceries.`;
   return {
     id: 'superlative-most-expensive',
     category: 'superlative',
     headline: `Your priciest ride: ${money(t.amount, stats.currency)}`,
-    sub: `One trip${where} that cost more than some people's weekly groceries.`,
+    sub,
     emoji: '💸',
     severity: t.amount >= 100 ? 'spicy' : 'light',
     value: t.amount,
-    funScore: 66,
+    funScore: t.amount >= 100 ? 78 : 66,
   };
 }
 

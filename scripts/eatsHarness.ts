@@ -56,6 +56,12 @@ async function main() {
   const allTime = all.byTimeframe.get('all')!;
   const { stats, eats, combined } = allTime;
 
+  console.log('\n=== TOP ROASTS (deterministic, ranked) ===');
+  for (const r of allTime.roasts.slice(0, 14)) {
+    console.log(`  [${r.funScore.toFixed(0)}|${r.category}] ${r.headline}`);
+    console.log(`        ${r.sub}`);
+  }
+
   console.log('\n=== RIDES ===');
   console.log('Completed rides:', stats.totalRides);
   console.log('Rides spend:', money(stats.totalSpend));

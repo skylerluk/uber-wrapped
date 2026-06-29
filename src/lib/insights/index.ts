@@ -8,6 +8,9 @@ import { buildRoasts } from './roasts';
 import { computeAllTime } from './allTime';
 import { computeEatsInsights } from './eats/computeEats';
 import { computeCombined, buildCombinedSignals } from './combined';
+import { buildRidesRoasts } from './rides/ridesRoasts';
+import { buildEatsRoasts } from './eats/eatsRoasts';
+import { buildCrossServiceRoasts } from './combinedRoasts';
 import { isEatsCompleted, isEatsCanceled } from '../parse/eats/parseEats';
 import {
   filterByTimeframe,
@@ -24,6 +27,9 @@ export { computeEatsInsights } from './eats/computeEats';
 export { computeCombined, buildCombinedSignals } from './combined';
 export { buildRidesSignals } from './rides/roastSignals';
 export { buildEatsSignals } from './eats/roastSignals';
+export { buildRidesRoasts } from './rides/ridesRoasts';
+export { buildEatsRoasts } from './eats/eatsRoasts';
+export { buildCrossServiceRoasts } from './combinedRoasts';
 export * from './comparisons';
 export * from './timeframe';
 
@@ -34,6 +40,8 @@ export * from './timeframe';
 export interface EatsContext {
   /** All Eats orders (any status). */
   eatsOrders?: EatsOrder[];
+  /** Lifetime reputation (rating + ratings distribution). */
+  reputation?: Reputation | null;
 }
 
 export function buildInsights(
@@ -46,21 +54,30 @@ export function buildInsights(
   const completed = filterByTimeframe(completedTrips, timeframe);
   const stats = computeStats(all, completed);
   const allTime = timeframe.kind === 'all' ? computeAllTime(completed) : null;
-  const roasts = buildRoasts(stats, { timeframe, allTime });
 
   // Eats (optional). Filter to the timeframe, split completed vs canceled.
   let eats = null as Insights['eats'];
   let combined = null as Insights['combined'];
+  let eatsOrdersTf: EatsOrder[] = [];
   const ridesPresent = completedTrips.length > 0;
   if (ctx.eatsOrders && ctx.eatsOrders.length > 0) {
-    const orders = filterEatsByTimeframe(ctx.eatsOrders, timeframe);
-    const completedOrders = orders.filter((o) => isEatsCompleted(o.status));
-    const canceledOrders = orders.filter((o) => isEatsCanceled(o.status)).length;
+    eatsOrdersTf = filterEatsByTimeframe(ctx.eatsOrders, timeframe);
+    const completedOrders = eatsOrdersTf.filter((o) => isEatsCompleted(o.status));
+    const canceledOrders = eatsOrdersTf.filter((o) => isEatsCanceled(o.status)).length;
     eats = computeEatsInsights(completedOrders, canceledOrders);
     combined = computeCombined(ridesPresent ? stats : null, eats);
   } else if (ridesPresent) {
     combined = computeCombined(stats, null);
   }
+
+  // Roasts: deterministic rides scale-roasts + signature rides/eats/cross
+  // roasts. The rides signature roasts may cite addresses (client-side only).
+  const roasts = [
+    ...buildRoasts(stats, { timeframe, allTime }),
+    ...(ridesPresent ? buildRidesRoasts(stats, completed, ctx.reputation ?? null) : []),
+    ...(eats ? buildEatsRoasts(eats, eatsOrdersTf) : []),
+    ...(combined ? buildCrossServiceRoasts(combined) : []),
+  ].sort((a, b) => b.funScore - a.funScore);
 
   return {
     stats,
@@ -104,7 +121,7 @@ export function buildAllInsights(
   const completedOrders = eatsOrders.filter((o) => isEatsCompleted(o.status));
   const years = getAvailableYearsCombined(completedTrips, completedOrders);
   const byTimeframe = new Map<string, Insights>();
-  const ctx: EatsContext = { eatsOrders };
+  const ctx: EatsContext = { eatsOrders, reputation: opts.reputation ?? null };
 
   const allTf: Timeframe = { kind: 'all' };
   byTimeframe.set(timeframeKey(allTf), buildInsights(allTrips, completedTrips, allTf, ctx));
