@@ -8,6 +8,7 @@ export interface SceneActions {
   onDashboard: () => void;
   onShare: () => void;
   onRestart: () => void;
+  onPickAnother?: () => void;
 }
 
 export interface Scene {
@@ -175,9 +176,16 @@ export function buildScenes(insights: Insights, actions: SceneActions): Scene[] 
             Share
           </button>
         </div>
-        <button onClick={actions.onRestart} className="mt-2 text-xs text-white/60 underline underline-offset-2">
-          Try another zip
-        </button>
+        <div className="mt-2 flex items-center gap-4 text-xs text-white/60">
+          {actions.onPickAnother && (
+            <button onClick={actions.onPickAnother} className="underline underline-offset-2 hover:text-white">
+              ← Pick another Wrapped
+            </button>
+          )}
+          <button onClick={actions.onRestart} className="underline underline-offset-2 hover:text-white">
+            Try another zip
+          </button>
+        </div>
       </div>
     ),
   });

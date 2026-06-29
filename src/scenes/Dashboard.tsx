@@ -12,6 +12,7 @@ interface DashboardProps {
   onRestart: () => void;
   onReplay: () => void;
   onShare: () => void;
+  onPickAnother?: () => void;
 }
 
 function Card({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
@@ -62,7 +63,7 @@ function BarList({
   );
 }
 
-export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onReplay, onShare }: DashboardProps) {
+export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onReplay, onShare, onPickAnother }: DashboardProps) {
   const { stats } = insights;
   const a = stats.available;
   const roasts = [...insights.roasts, ...aiRoasts].sort((a, b) => b.funScore - a.funScore);
@@ -110,8 +111,12 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
     <main className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="display-number text-4xl sm:text-5xl">Your Uber Wrapped</h1>
-          <p className="mt-1 text-dim">{stats.dateRange.label}</p>
+          <h1 className="display-number text-4xl sm:text-5xl">
+            {insights.meta.timeframe.kind === 'all' ? 'Your Uber Wrapped' : `${insights.meta.label} Wrapped`}
+          </h1>
+          <p className="mt-1 text-dim">
+            {insights.meta.timeframe.kind === 'all' ? `All Time · ${stats.dateRange.label}` : stats.dateRange.label}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -126,6 +131,14 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
           >
             Replay story
           </button>
+          {onPickAnother && (
+            <button
+              onClick={onPickAnother}
+              className="rounded-full border border-hairline px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-2"
+            >
+              Pick another
+            </button>
+          )}
           <button
             onClick={onRestart}
             className="rounded-full border border-hairline px-5 py-2.5 text-sm font-semibold text-dim transition-colors hover:bg-surface-2 hover:text-text"
