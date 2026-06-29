@@ -1,10 +1,18 @@
-import type { ReactNode } from 'react';
+import { Suspense, lazy, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { DropZone } from './DropZone';
+import { ChromeTitle } from './landing/ChromeTitle';
+import { Marquee } from './landing/Marquee';
+
+// Lazy so the OGL shader doesn't block first paint; a chrome poster shows meanwhile.
+const LiquidChromeBackground = lazy(() => import('./landing/LiquidChromeBackground'));
 
 const B = ({ children }: { children: ReactNode }) => (
   <strong className="font-semibold text-text">{children}</strong>
 );
+
+const POSTER_BG =
+  'radial-gradient(120% 90% at 50% 25%, rgba(205,205,214,0.4), transparent 55%), var(--chrome-ramp)';
 
 interface LandingProps {
   onFile: (file: File) => void;
@@ -41,42 +49,71 @@ const HOW_TO_SECTIONS: { title: string; steps: ReactNode[] }[] = [
 
 export function Landing({ onFile, error }: LandingProps) {
   return (
-    <main className="relative mx-auto flex min-h-[100dvh] max-w-xl flex-col items-center justify-center gap-8 px-6 py-16">
-      {/* ambient glow behind the hero */}
+    <main className="relative min-h-[100dvh] overflow-hidden">
+      {/* Liquid-chrome WebGL background (poster while the module loads) */}
+      <Suspense
+        fallback={<div className="absolute inset-0 -z-10" style={{ background: POSTER_BG, opacity: 0.7 }} />}
+      >
+        <LiquidChromeBackground />
+      </Suspense>
+
+      {/* Counter-scrolling marquees, faint, behind the hero */}
+      <div className="pointer-events-none absolute inset-0 -z-[5] flex flex-col justify-between py-12">
+        <Marquee
+          items={['UBER WRAPPED']}
+          speed={38}
+          className="display-number text-[clamp(3rem,11vw,8rem)] leading-none text-white/[0.06]"
+        />
+        <Marquee
+          items={['RIDES', 'EATS', 'SURGE', '2 A.M.', 'LATE NIGHTS', 'AIRPORT RUNS']}
+          direction="right"
+          speed={30}
+          className="text-[clamp(1rem,3vw,2rem)] font-bold uppercase tracking-[0.3em] text-white/[0.05]"
+        />
+      </div>
+
+      {/* Grain above the shader so the chrome never looks flat */}
+      <div className="grain pointer-events-none absolute inset-0 -z-[4] opacity-50 mix-blend-overlay" />
+
+      {/* Dark scrim behind the hero for text legibility on bright chrome */}
       <div
-        className="pointer-events-none absolute left-1/2 top-[18%] -z-10 h-72 w-72 -translate-x-1/2 rounded-full opacity-50 blur-[90px]"
-        style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.5), rgba(236,72,153,0.25) 60%, transparent)' }}
+        className="pointer-events-none absolute inset-0 -z-[3]"
+        style={{
+          background:
+            'radial-gradient(72% 62% at 50% 38%, rgba(0,0,0,0.86), rgba(0,0,0,0.45) 58%, transparent 82%)',
+        }}
       />
 
-      <motion.header
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="text-center"
-      >
-        <h1 className="display-number text-[clamp(3rem,14vw,5.5rem)]">Uber Wrapped</h1>
-        <p className="mx-auto mt-4 max-w-md text-base text-dim sm:text-lg">
-          Your year in Uber, wrapped. Drop your data export for a cinematic recap of every ride,
-          dollar, and questionable 2&nbsp;a.m. decision.
-        </p>
-      </motion.header>
+      <div className="mx-auto flex min-h-[100dvh] max-w-xl flex-col items-center justify-center gap-8 px-6 py-16">
+        <header className="text-center">
+          <ChromeTitle />
+          <motion.p
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+            className="mx-auto mt-5 max-w-md text-base text-dim sm:text-lg"
+          >
+            Your year in Uber, wrapped. Drop your data export for a cinematic recap of every ride,
+            dollar, and questionable 2&nbsp;a.m. decision.
+          </motion.p>
+        </header>
 
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full"
-      >
-        <DropZone onFile={onFile} />
-        {error && (
-          <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400">{error}</p>
-        )}
-        <p className="mt-4 text-center text-xs text-dim">
-          🔒 100% on-device — your ride data and addresses never leave this browser.
-        </p>
-      </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full"
+        >
+          <DropZone onFile={onFile} />
+          {error && (
+            <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400">{error}</p>
+          )}
+          <p className="mt-4 text-center text-xs text-dim">
+            🔒 100% on-device — your ride data and addresses never leave this browser.
+          </p>
+        </motion.div>
 
-      <details className="elevated w-full rounded-2xl border border-hairline bg-surface p-5">
+        <details className="elevated w-full rounded-2xl border border-hairline bg-[#0b0b0ce8] p-5 backdrop-blur-md">
         <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold">
           How to download your Uber data
           <span className="text-dim transition-transform">▾</span>
@@ -131,6 +168,7 @@ export function Landing({ onFile, error }: LandingProps) {
           View source on GitHub
         </a>
       </footer>
+      </div>
     </main>
   );
 }
