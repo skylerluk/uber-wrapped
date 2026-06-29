@@ -38,9 +38,10 @@ float field(vec2 p){
 }
 vec3 chromeEnv(float n){
   float y = clamp(n, 0.0, 1.0);
-  vec3 dark = vec3(0.40,0.40,0.46);
-  vec3 light = vec3(1.0);
-  vec3 mid = vec3(0.80);
+  // Dark, neutral graphite: deep charcoal base with restrained silver bands.
+  vec3 dark = vec3(0.035);
+  vec3 light = vec3(0.58);
+  vec3 mid = vec3(0.15);
   vec3 col = mix(dark, light, smoothstep(0.0,0.5,y));
   col = mix(col, mid, smoothstep(0.5,1.0,y));
   return col;
@@ -69,17 +70,17 @@ void main(){
   col.g = chromeEnv(metal).g;
   col.b = chromeEnv(metal - off).b;
 
-  // crisp specular highlights along steep slopes
-  float spec = pow(max(nrm.y, 0.0), 5.0) + pow(fres, 3.0);
+  // crisp specular highlights along steep slopes — the silver streaks
+  float spec = pow(max(nrm.y, 0.0), 6.0) + pow(fres, 3.0);
   col += spec * 0.45;
 
-  // iridescent oil-slick, confined to the specular fringe
+  // iridescent oil-slick, a faint hint confined to the sharpest fringe
   vec3 irid = 0.5 + 0.5 * cos(6.2831 * (vec3(0.0,0.33,0.67) + metal + fres*1.3));
-  col = mix(col, col * 0.7 + irid * 0.6, smoothstep(0.45, 1.0, fres) * 0.4);
+  col = mix(col, col * 0.8 + irid * 0.4, smoothstep(0.6, 1.0, fres) * 0.25);
 
-  // gentle vignette into the black base (keeps a visible metal field)
+  // vignette into the black base — keep it moody/dark
   float vig = smoothstep(1.7, 0.1, length(p));
-  col *= mix(0.5, 1.05, vig);
+  col *= mix(0.3, 0.62, vig);
 
   gl_FragColor = vec4(col, 1.0);
 }

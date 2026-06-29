@@ -92,7 +92,7 @@ export function Landing({ onFile, error }: LandingProps) {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-            className="mx-auto mt-5 max-w-md text-base text-dim sm:text-lg"
+            className="mx-auto mt-5 max-w-md text-base font-medium text-white/85 [text-shadow:0_1px_14px_rgba(0,0,0,0.9)] sm:text-lg"
           >
             Drop your data export for a cinematic recap of every ride, dollar, and questionable
             2&nbsp;a.m. decision.
@@ -109,7 +109,7 @@ export function Landing({ onFile, error }: LandingProps) {
           {error && (
             <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400">{error}</p>
           )}
-          <p className="mt-4 text-center text-xs text-dim">
+          <p className="mt-4 text-center text-xs font-medium text-white/75 [text-shadow:0_1px_10px_rgba(0,0,0,0.95)]">
             🔒 100% on-device — your ride data and addresses never leave this browser.
           </p>
         </motion.div>
@@ -158,13 +158,13 @@ export function Landing({ onFile, error }: LandingProps) {
         </div>
       </details>
 
-      <footer className="mt-2 flex flex-col items-center gap-1 text-center text-xs text-faint">
+      <footer className="mt-2 flex flex-col items-center gap-1 text-center text-xs text-white/60 [text-shadow:0_1px_10px_rgba(0,0,0,0.95)]">
         <p>Processed entirely in your browser. Nothing uploaded.</p>
         <a
           href="https://github.com/skylerluk/uber-wrapped"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-dim underline underline-offset-2 hover:text-text"
+          className="text-white/75 underline underline-offset-2 hover:text-text"
         >
           View source on GitHub
         </a>
