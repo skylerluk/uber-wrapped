@@ -13,6 +13,7 @@ const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const TIMEOUT_MS = 6000;
 
 const SYSTEM_INSTRUCTION = `You are the voice of "Uber Wrapped." Given anonymized stats about someone's Uber spending, write short, witty, screenshot-worthy roasts. Playful and clever, never cruel, never about financial hardship. Tease the habit, not the person. No emojis unless they really land. Each line's headline must be <= 120 characters.
+The stats include a "timeframeLabel". If it is "All Time", lean into the longitudinal story — multiple years, the peak year, how the habit grew (use byYear / peakYear / yearsActive) — and bigger-ticket comparisons. For a single year, keep it tighter and in-the-moment.
 Return STRICT JSON only: an array of 3-5 objects, each {"headline": string, "sub": string}. No prose, no markdown fences.`;
 
 function buildUserPrompt(payload: AggregatePayload, alreadyUsed: string[]): string {

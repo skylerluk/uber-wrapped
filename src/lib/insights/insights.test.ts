@@ -259,7 +259,8 @@ describe('toAggregatePayload — privacy boundary', () => {
       'topCity', 'distinctCityCount', 'avgFare', 'mostExpensiveFare', 'canceledRides',
       'lateNightRides', 'busiestDayOfWeek', 'favoriteTimeOfDay', 'hoursInCar',
       'totalSurgeFare', 'totalTolls', 'totalSaved', 'airportRides', 'scheduledRides',
-      'topProduct', 'comparisons',
+      'topProduct', 'timeframeLabel', 'byYear', 'peakYear', 'topYoYPct', 'yearsActive',
+      'comparisons',
     ]);
     for (const k of Object.keys(payload)) expect(allowed.has(k)).toBe(true);
   });

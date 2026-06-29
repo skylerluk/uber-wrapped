@@ -1,8 +1,22 @@
 // The roast / fun-fact engine. Deterministic, derived purely from Stats.
 // Tone: playful, Spotify-Wrapped energy — tease the habit, never the person.
 
-import type { Roast, Stats } from '../../types/insights';
-import { BIG_PURCHASES, TRAVEL, FOOD, DISTANCE, type PriceRef } from './comparisons';
+import type { Roast, Stats, Timeframe, AllTimeInsights } from '../../types/insights';
+import {
+  BIG_PURCHASES,
+  TRAVEL,
+  FOOD,
+  DISTANCE,
+  ALLTIME_PURCHASES,
+  ALLTIME_TRAVEL,
+  investedValue,
+  type PriceRef,
+} from './comparisons';
+
+export interface RoastContext {
+  timeframe?: Timeframe;
+  allTime?: AllTimeInsights | null;
+}
 
 function fmt(n: number): string {
   return Math.round(n).toLocaleString('en-US');
@@ -327,11 +341,128 @@ function productLoyaltyRoast(stats: Stats): Roast | null {
   };
 }
 
-/** Build the ranked roast list (6–10 strong candidates when data allows). */
-export function buildRoasts(stats: Stats): Roast[] {
-  const candidates = [
-    purchaseRoast(stats),
-    travelRoast(stats),
+// ——— All-time (bigger scale + longitudinal) ———
+
+function allTimePurchaseRoast(stats: Stats): Roast | null {
+  if (stats.totalSpend <= 0) return null;
+  const pick = pickAffordable(ALLTIME_PURCHASES, stats.totalSpend);
+  if (!pick) return null;
+  const count = Math.floor(pick.multiple);
+  const headline =
+    count >= 2 ? `Lifetime Uber = ${count} ${pick.ref.plural}` : `Lifetime Uber = ${pick.ref.label}`;
+  return {
+    id: `alltime-purchase-${pick.ref.id}`,
+    category: 'purchase',
+    headline,
+    sub: `${money(stats.totalSpend, stats.currency)} across your whole Uber history.`,
+    emoji: pick.ref.emoji,
+    severity: 'spicy',
+    value: count >= 2 ? count : pick.multiple,
+    funScore: 90 + roundnessBonus(pick.multiple),
+  };
+}
+
+function allTimeTravelRoast(stats: Stats): Roast | null {
+  if (stats.totalSpend <= 0) return null;
+  const pick = pickAffordable(ALLTIME_TRAVEL, stats.totalSpend);
+  if (!pick) return null;
+  const count = Math.floor(pick.multiple);
+  return {
+    id: `alltime-travel-${pick.ref.id}`,
+    category: 'travel',
+    headline: count >= 2 ? `That's ${count} ${pick.ref.plural}` : `That's ${pick.ref.label}`,
+    sub: `You stayed earthbound instead.`,
+    emoji: pick.ref.emoji,
+    severity: 'medium',
+    value: count >= 2 ? count : pick.multiple,
+    funScore: 80 + roundnessBonus(pick.multiple),
+  };
+}
+
+function investmentRoast(stats: Stats, allTime: AllTimeInsights): Roast | null {
+  if (stats.totalSpend < 1000 || allTime.yearsActive < 2) return null;
+  const fv = investedValue(stats.totalSpend, allTime.yearsActive);
+  return {
+    id: 'alltime-invested',
+    category: 'behavior',
+    headline: `Invested at 7%, that'd be ${money(fv, stats.currency)} today`,
+    sub: `Your rides instead of your retirement. 📈`,
+    emoji: '📈',
+    severity: 'spicy',
+    value: fv,
+    funScore: 74,
+  };
+}
+
+function peakYearRoast(stats: Stats, allTime: AllTimeInsights): Roast | null {
+  if (allTime.peakYearBySpend == null || allTime.byYear.length < 2) return null;
+  const y = allTime.byYear.find((b) => b.year === allTime.peakYearBySpend);
+  if (!y) return null;
+  return {
+    id: 'alltime-peak-year',
+    category: 'superlative',
+    headline: `${y.year} was your Uber era`,
+    sub: `${money(y.spend, stats.currency)} across ${fmt(y.rides)} rides — your biggest year.`,
+    emoji: '👑',
+    severity: 'medium',
+    value: y.spend,
+    funScore: 77,
+  };
+}
+
+function yearsActiveRoast(allTime: AllTimeInsights): Roast | null {
+  if (!allTime.spanLabel || allTime.yearsActive < 2) return null;
+  return {
+    id: 'alltime-years-active',
+    category: 'time',
+    headline: `You've been an Uber person for ${allTime.spanLabel}`,
+    sub: `Loyalty that the subway could never. 🚇`,
+    emoji: '🗓️',
+    severity: 'light',
+    value: allTime.yearsActive,
+    funScore: 70,
+  };
+}
+
+function yoyRoast(allTime: AllTimeInsights): Roast | null {
+  const j = allTime.biggestJump;
+  if (!j || j.spendPct == null || j.spendPct < 20) return null;
+  return {
+    id: 'alltime-yoy',
+    category: 'behavior',
+    headline: `${j.year}-you spent ${Math.round(j.spendPct)}% more than ${j.prevYear}-you`,
+    sub: `The habit only grew. 📈`,
+    emoji: '📈',
+    severity: 'medium',
+    value: j.spendPct,
+    funScore: 67,
+  };
+}
+
+function citiesOverTimeRoast(allTime: AllTimeInsights): Roast | null {
+  if (allTime.distinctCitiesAllTime < 2 || allTime.yearsActive < 2) return null;
+  return {
+    id: 'alltime-cities',
+    category: 'behavior',
+    headline: `${fmt(allTime.distinctCitiesAllTime)} cities across ${fmt(allTime.yearsActive)} years`,
+    sub: `An Uber in every port. 🌎`,
+    emoji: '🌎',
+    severity: 'light',
+    value: allTime.distinctCitiesAllTime,
+    funScore: 62,
+  };
+}
+
+/**
+ * Build the ranked roast list. Pass `{ timeframe: { kind: 'all' }, allTime }`
+ * for the grander all-time catalog + longitudinal roasts; otherwise the tighter
+ * single-year scale is used.
+ */
+export function buildRoasts(stats: Stats, ctx?: RoastContext): Roast[] {
+  const isAllTime = ctx?.timeframe?.kind === 'all';
+  const at = ctx?.allTime ?? null;
+
+  const shared = [
     foodRoast(stats),
     distanceRoast(stats),
     lateNightRoast(stats),
@@ -346,7 +477,25 @@ export function buildRoasts(stats: Stats): Roast[] {
     timeInCarRoast(stats),
     cancellationFeesRoast(stats),
     productLoyaltyRoast(stats),
-  ].filter((r): r is Roast => r !== null);
+  ];
 
+  const scaled =
+    isAllTime
+      ? [
+          allTimePurchaseRoast(stats),
+          allTimeTravelRoast(stats),
+          ...(at
+            ? [
+                investmentRoast(stats, at),
+                peakYearRoast(stats, at),
+                yearsActiveRoast(at),
+                yoyRoast(at),
+                citiesOverTimeRoast(at),
+              ]
+            : []),
+        ]
+      : [purchaseRoast(stats), travelRoast(stats)];
+
+  const candidates = [...scaled, ...shared].filter((r): r is Roast => r !== null);
   return candidates.sort((a, b) => b.funScore - a.funScore);
 }
