@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fontsource/inter": "^5.2.8",
+    "@fontsource-variable/inter": "^5.2.8",
     "framer-motion": "^12.42.0",
     "html-to-image": "^1.11.13",
     "jszip": "^3.10.1",
