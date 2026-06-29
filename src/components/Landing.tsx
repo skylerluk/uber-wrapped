@@ -94,8 +94,8 @@ export function Landing({ onFile, error }: LandingProps) {
             transition={{ duration: 0.6, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
             className="mx-auto mt-5 max-w-md text-base text-dim sm:text-lg"
           >
-            Your year in Uber, wrapped. Drop your data export for a cinematic recap of every ride,
-            dollar, and questionable 2&nbsp;a.m. decision.
+            Drop your data export for a cinematic recap of every ride, dollar, and questionable
+            2&nbsp;a.m. decision.
           </motion.p>
         </header>
 
