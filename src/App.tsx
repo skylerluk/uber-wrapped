@@ -135,6 +135,7 @@ function App() {
       {state.phase === 'dashboard' && insights && (
         <Dashboard
           insights={insights}
+          reputation={state.all.reputation}
           aiRoasts={state.aiRoasts}
           aiPending={state.aiPending}
           onRestart={restart}

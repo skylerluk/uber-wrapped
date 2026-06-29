@@ -35,6 +35,7 @@ export function computeCombined(
     totalInteractions: ridesCount + eatsCount,
     foodVsRidesPct,
     dateRangeLabel,
+    currency: stats?.currency ?? eats?.currency ?? null,
     hasRides,
     hasEats,
   };

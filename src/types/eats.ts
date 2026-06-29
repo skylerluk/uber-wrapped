@@ -73,6 +73,7 @@ export interface CombinedInsights {
   /** +N% means food spend exceeds ride spend by N% (null if no rides). */
   foodVsRidesPct: number | null;
   dateRangeLabel: string;
+  currency: string | null;
   hasRides: boolean;
   hasEats: boolean;
 }

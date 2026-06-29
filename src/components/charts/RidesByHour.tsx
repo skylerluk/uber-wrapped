@@ -1,7 +1,7 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AXIS_TICK, DarkTooltip, GRID_STROKE } from './ChartTheme';
 
-export function RidesByHour({ ridesByHour }: { ridesByHour: number[] }) {
+export function RidesByHour({ ridesByHour, unit = 'rides' }: { ridesByHour: number[]; unit?: string }) {
   const data = ridesByHour.map((rides, hour) => ({
     hour,
     rides,
@@ -16,7 +16,7 @@ export function RidesByHour({ ridesByHour }: { ridesByHour: number[] }) {
         <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
         <Tooltip
           cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-          content={<DarkTooltip formatter={(v) => `${v} rides`} />}
+          content={<DarkTooltip formatter={(v) => `${v} ${unit}`} />}
         />
         <Bar dataKey="rides" fill="#ffffff" radius={[3, 3, 0, 0]} maxBarSize={18} />
       </BarChart>

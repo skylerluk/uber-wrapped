@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { Insights } from '../types/insights';
-import { buildScenes, type SceneActions } from './scenes';
-import { buildAllTimeScenes } from './alltime/allTimeScenes';
+import type { SceneActions } from './scenes';
+import { buildCombinedScenes } from './combinedScenes';
 import { sceneBackground } from '../styles/gradients';
 import { RoastCard } from '../components/RoastCard';
 
@@ -15,13 +15,7 @@ const SCENE_MS = 5200;
 const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export function Story({ insights, actions }: StoryProps) {
-  const scenes = useMemo(
-    () =>
-      insights.meta.timeframe.kind === 'all' && insights.allTime
-        ? buildAllTimeScenes(insights, actions)
-        : buildScenes(insights, actions),
-    [insights, actions],
-  );
+  const scenes = useMemo(() => buildCombinedScenes(insights, actions), [insights, actions]);
   const [index, setIndex] = useState(0);
   const reduce = useReducedMotion();
   const timer = useRef<number | null>(null);
@@ -135,6 +129,15 @@ export function Story({ insights, actions }: StoryProps) {
               </motion.div>
             ) : (
               <div className="mx-auto flex max-w-2xl flex-col items-center text-center">
+                {scene.tag && (
+                  <motion.span
+                    variants={item}
+                    className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/85 backdrop-blur"
+                  >
+                    <span aria-hidden>{scene.tag.icon}</span>
+                    {scene.tag.label}
+                  </motion.span>
+                )}
                 {scene.kicker && (
                   <motion.p variants={item} className="mb-5 text-sm font-semibold uppercase tracking-[0.28em] text-white/75">
                     {scene.kicker}

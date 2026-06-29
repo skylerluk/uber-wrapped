@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Insights, Roast, CityBucket, ProductBucket } from '../types/insights';
+import type { Reputation } from '../types/eats';
 import { StatCard } from '../components/StatCard';
 import { SpendOverTime } from '../components/charts/SpendOverTime';
 import { RidesByHour } from '../components/charts/RidesByHour';
@@ -8,12 +9,19 @@ import { formatMoney, formatNumber, formatDate, formatDuration, formatMonthLabel
 
 interface DashboardProps {
   insights: Insights;
+  reputation?: Reputation | null;
   aiRoasts?: Roast[];
   aiPending?: boolean;
   onRestart: () => void;
   onReplay: () => void;
   onShare: () => void;
   onPickAnother?: () => void;
+}
+
+function formatHour(h: number): string {
+  const am = h < 12;
+  const hr = h % 12 === 0 ? 12 : h % 12;
+  return `${hr} ${am ? 'AM' : 'PM'}`;
 }
 
 function Card({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
@@ -64,10 +72,24 @@ function BarList({
   );
 }
 
-export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onReplay, onShare, onPickAnother }: DashboardProps) {
-  const { stats } = insights;
+/** Section divider used to label the Rides / Eats blocks. */
+function SectionLabel({ icon, children }: { icon: string; children: ReactNode }) {
+  return (
+    <div className="mb-4 mt-2 flex items-center gap-2.5">
+      <span className="text-xl" aria-hidden>{icon}</span>
+      <h2 className="display-number text-2xl sm:text-3xl">{children}</h2>
+      <span className="ml-3 h-px flex-1 bg-hairline" />
+    </div>
+  );
+}
+
+export function Dashboard({ insights, reputation, aiRoasts = [], aiPending, onRestart, onReplay, onShare, onPickAnother }: DashboardProps) {
+  const { stats, eats, combined } = insights;
   const a = stats.available;
   const at = insights.allTime;
+  const hasRides = !!combined?.hasRides || stats.totalRides > 0;
+  const hasEats = !!eats && eats.orderCount > 0;
+  const showCombinedHero = !!combined && combined.hasRides && combined.hasEats;
   const yoyByYear = new Map((at?.yoy ?? []).map((y) => [y.year, y]));
   const roasts = [...insights.roasts, ...aiRoasts].sort((a, b) => b.funScore - a.funScore);
 
@@ -151,6 +173,41 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
         </div>
       </header>
 
+      {/* Combined hero: total to Uber + the rides-vs-Eats split. */}
+      {showCombinedHero && combined && (
+        <>
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard label="Total to Uber" value={combined.totalToUber} format={(n) => formatMoney(n, combined.currency)} />
+            <StatCard label="Rides + orders" value={combined.totalInteractions} />
+            <StatCard label="Rides spend" value={combined.ridesSpend} format={(n) => formatMoney(n, combined.currency)} hint={`${formatNumber(combined.ridesCount)} rides`} />
+            <StatCard label="Eats spend" value={combined.eatsSpend} format={(n) => formatMoney(n, combined.currency)} hint={`${formatNumber(combined.eatsCount)} orders`} />
+          </div>
+          <Card title="Rides vs Eats" className="mb-8">
+            {(() => {
+              const total = Math.max(1, combined.ridesSpend + combined.eatsSpend);
+              const ridesPct = (combined.ridesSpend / total) * 100;
+              return (
+                <>
+                  <div className="flex h-4 overflow-hidden rounded-full bg-surface-3">
+                    <div className="h-full bg-white/90" style={{ width: `${ridesPct}%` }} />
+                    <div className="h-full bg-white/40" style={{ width: `${100 - ridesPct}%` }} />
+                  </div>
+                  <div className="mt-2 flex justify-between text-xs text-dim">
+                    <span>🚗 Rides · {formatMoney(combined.ridesSpend, combined.currency)} ({Math.round(ridesPct)}%)</span>
+                    <span>🍔 Eats · {formatMoney(combined.eatsSpend, combined.currency)} ({Math.round(100 - ridesPct)}%)</span>
+                  </div>
+                </>
+              );
+            })()}
+          </Card>
+        </>
+      )}
+
+      {/* Rides section */}
+      {hasRides && (
+        <>
+          {(showCombinedHero || hasEats) && <SectionLabel icon="🚗">Rides</SectionLabel>}
+
       {/* Hero stat row */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Total spend" value={stats.totalSpend} format={(n) => formatMoney(n, stats.currency)} />
@@ -163,6 +220,13 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
           display={stats.dateRange.label}
           hint={stats.canceledRides > 0 ? `${formatNumber(stats.canceledRides)} canceled` : undefined}
         />
+        {reputation?.rating != null && (
+          <StatCard
+            label="Your rating"
+            display={`${reputation.rating.toFixed(2)}★`}
+            hint={reputation.oneStar > 0 ? `${formatNumber(reputation.oneStar)} one-star` : undefined}
+          />
+        )}
       </div>
 
       {/* All-time: years overview */}
@@ -313,6 +377,91 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
           </Card>
         )}
       </div>
+        </>
+      )}
+
+      {/* Eats section */}
+      {hasEats && eats && (
+        <>
+          <SectionLabel icon="🍔">Eats</SectionLabel>
+
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard label="Eats spend" value={eats.totalSpend} format={(n) => formatMoney(n, eats.currency)} />
+            <StatCard label="Orders" value={eats.orderCount} hint={eats.canceledOrders > 0 ? `${formatNumber(eats.canceledOrders)} canceled` : undefined} />
+            <StatCard label="Items" value={eats.itemCount} />
+            <StatCard label="Avg order" value={eats.avgOrder} format={(n) => formatMoney(n, eats.currency)} />
+          </div>
+
+          {eats.topRestaurants.length > 0 && (
+            <div className="mb-6 grid gap-4 lg:grid-cols-2">
+              <Card title="Top restaurants">
+                <BarList
+                  rows={eats.topRestaurants.map((r) => ({ label: r.name, rides: r.orders, spend: r.spend }))}
+                  currency={eats.currency}
+                />
+              </Card>
+              {eats.available.time && (
+                <Card title="Orders by hour of day">
+                  <RidesByHour ridesByHour={eats.ordersByHour} unit="orders" />
+                </Card>
+              )}
+            </div>
+          )}
+
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            {eats.mostOrderedItem && (
+              <Tile label="Most-ordered item" value={eats.mostOrderedItem.name} hint={`${formatNumber(eats.mostOrderedItem.qty)}×`} />
+            )}
+            {eats.loyalty && (
+              <Tile label="Most loyal to" value={eats.loyalty.restaurant} hint={`${eats.loyalty.pct}% of orders`} />
+            )}
+            {eats.favoriteHour != null && (
+              <Tile label="Favorite order time" value={formatHour(eats.favoriteHour)} hint={eats.busiestDayOfWeek ? `${eats.busiestDayOfWeek.day}s` : undefined} />
+            )}
+            {eats.lateNightOrders > 0 && (
+              <Tile label="Late-night orders" value={formatNumber(eats.lateNightOrders)} hint="midnight–5am" />
+            )}
+            {eats.available.delivery && eats.avgDeliverySeconds > 0 && (
+              <Tile label="Avg delivery wait" value={formatDuration(eats.avgDeliverySeconds)} />
+            )}
+            {eats.totalCustomizationSpend > 0 && (
+              <Tile label="Spent on add-ons" value={formatMoney(eats.totalCustomizationSpend, eats.currency)} />
+            )}
+          </div>
+
+          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {eats.mostExpensiveOrder && (
+              <Card title="Most expensive order">
+                <p className="display-number text-2xl">{formatMoney(eats.mostExpensiveOrder.total, eats.currency)}</p>
+                <p className="mt-1 text-xs text-dim">
+                  {eats.mostExpensiveOrder.restaurant ?? '—'} · {formatDate(eats.mostExpensiveOrder.date)}
+                </p>
+              </Card>
+            )}
+            {eats.mostExpensiveItem && (
+              <Card title="Priciest single item">
+                <p className="display-number text-2xl">{formatMoney(eats.mostExpensiveItem.price, eats.currency)}</p>
+                <p className="mt-1 text-xs text-dim">
+                  {eats.mostExpensiveItem.name ?? '—'}
+                  {eats.mostExpensiveItem.restaurant ? ` · ${eats.mostExpensiveItem.restaurant}` : ''}
+                </p>
+              </Card>
+            )}
+          </div>
+
+          {eats.specialInstructionSamples.length > 0 && (
+            <Card title="Things you wrote to your driver" className="mb-6">
+              <ul className="flex flex-wrap gap-2 text-sm">
+                {eats.specialInstructionSamples.slice(0, 6).map((s, i) => (
+                  <li key={i} className="rounded-full border border-hairline bg-surface-2 px-3 py-1.5 text-dim">
+                    "{s}"
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </>
+      )}
 
       {/* Roast wall */}
       <Card title="Fun facts & roasts">
