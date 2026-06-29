@@ -10,7 +10,7 @@ import type {
 } from '../../types/trip';
 import { unzipTrips } from './unzip';
 import { parseTripsCsv } from './parseTrips';
-import { isCompletedStatus, isCanceledStatus } from './coerce';
+import { isTripCompleted, isCanceledStatus } from './coerce';
 
 export { unzipTrips } from './unzip';
 export { parseTripsCsv } from './parseTrips';
@@ -116,7 +116,7 @@ export async function parseUberExport(buffer: ArrayBuffer): Promise<ParseOutcome
     }
 
     const allTrips = parsed.result.trips;
-    const completedTrips = allTrips.filter((t) => isCompletedStatus(t.status));
+    const completedTrips = allTrips.filter(isTripCompleted);
     const summary = buildSummary(
       allTrips,
       completedTrips,

@@ -1,18 +1,42 @@
+import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { DropZone } from './DropZone';
+
+const B = ({ children }: { children: ReactNode }) => (
+  <strong className="font-semibold text-text">{children}</strong>
+);
 
 interface LandingProps {
   onFile: (file: File) => void;
   error?: string | null;
 }
 
-const HOW_TO_STEPS = [
-  'Open your Uber account',
-  'Go to the Privacy Center',
-  'Tap "See Summary" (or "Download your data")',
-  'Choose "View my trips"',
-  'Open the top-right burger menu',
-  'Tap "Download"',
+const HOW_TO_SECTIONS: { title: string; steps: ReactNode[] }[] = [
+  {
+    title: 'Navigate to Privacy Settings',
+    steps: [
+      <>Open the <B>Uber app</B> on your phone.</>,
+      <>Tap the <B>Account</B> tab in the bottom-right corner.</>,
+      <>Select <B>Settings</B> from the menu list.</>,
+      <>Scroll down slightly and tap <B>Privacy &amp; Data</B> (or <B>Privacy</B>).</>,
+    ],
+  },
+  {
+    title: 'Request Your Data',
+    steps: [
+      <>Tap <B>Privacy Center</B>.</>,
+      <>Scroll down to the section titled <B>Your data and privacy</B>.</>,
+      <>Tap <B>Download your data</B>.</>,
+      <>Log in with your <B>Uber password</B> and complete the <B>2-step verification</B> (a code sent via SMS or email).</>,
+    ],
+  },
+  {
+    title: 'Confirm the Export',
+    steps: [
+      <>Review the data types being requested and tap <B>Request data</B>.</>,
+      <>Uber will begin compiling your <code className="text-dim">.zip</code> archive.</>,
+    ],
+  },
 ];
 
 export function Landing({ onFile, error }: LandingProps) {
@@ -57,20 +81,34 @@ export function Landing({ onFile, error }: LandingProps) {
           How to download your Uber data
           <span className="text-dim transition-transform">▾</span>
         </summary>
-        <ol className="mt-4 space-y-2.5 text-sm text-dim">
-          {HOW_TO_STEPS.map((step, i) => (
-            <li key={i} className="flex items-center gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-hairline-strong bg-surface-2 text-[11px] font-semibold tabular-nums text-text">
-                {i + 1}
-              </span>
-              <span>{step}</span>
-            </li>
+        <div className="mt-5 space-y-5">
+          {HOW_TO_SECTIONS.map((section, si) => (
+            <div key={si}>
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text">
+                <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-dim">
+                  Step {si + 1}
+                </span>
+                {section.title}
+              </h3>
+              <ol className="space-y-2.5 text-sm text-dim">
+                {section.steps.map((step, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-hairline-strong bg-surface-2 text-[11px] font-semibold tabular-nums text-text">
+                      {i + 1}
+                    </span>
+                    <span className="leading-snug">{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
           ))}
-        </ol>
-        <p className="mt-4 text-xs leading-relaxed text-faint">
-          Uber emails your export as a <code className="text-dim">.zip</code> — it can take a while
-          to arrive (sometimes up to 24–48 hours). When it lands, just drop the whole zip above; no
-          need to unzip it.{' '}
+        </div>
+
+        <div className="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3.5 text-xs leading-relaxed text-dim">
+          <B>⚠️ Heads up:</B> Uber typically takes <B>24–48 hours</B> to generate the file. You&apos;ll
+          get an email and an in-app notification when it&apos;s ready. Then download the{' '}
+          <code className="text-dim">.zip</code> to your phone&apos;s Files app and{' '}
+          <B>upload it here</B> — no need to unzip it.{' '}
           <a
             href="https://privacy.uber.com/"
             target="_blank"
@@ -79,7 +117,7 @@ export function Landing({ onFile, error }: LandingProps) {
           >
             Open Uber Privacy Center →
           </a>
-        </p>
+        </div>
       </details>
 
       <footer className="mt-2 flex flex-col items-center gap-1 text-center text-xs text-faint">

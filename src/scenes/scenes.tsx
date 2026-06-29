@@ -116,9 +116,47 @@ export function buildScenes(insights: Insights, actions: SceneActions): Scene[] 
     });
   }
 
+  // Time in car
+  const hoursInCar = stats.totalDurationSeconds / 3600;
+  if (hoursInCar >= 1) {
+    scenes.push({
+      id: 'time-in-car',
+      gradient: GRADIENTS.iceIndigo,
+      kicker: 'Time well spent?',
+      headline: (
+        <>
+          <CountUp value={Math.round(hoursInCar)} blurIn /> <span className="text-3xl sm:text-5xl">hrs</span>
+        </>
+      ),
+      sub: 'in the back of an Uber',
+    });
+  }
+
+  // Surge "tax"
+  if (stats.totalSurgeFare > 0) {
+    scenes.push({
+      id: 'surge',
+      gradient: GRADIENTS.amberRed,
+      kicker: 'The impatience tax',
+      headline: <CountUp value={stats.totalSurgeFare} format={(n) => formatMoney(n, stats.currency)} blurIn />,
+      sub: `paid in surge pricing across ${pluralize(stats.surgedRides, 'ride')}`,
+    });
+  }
+
+  // Money saved
+  if (stats.totalSaved > 0) {
+    scenes.push({
+      id: 'saved',
+      gradient: GRADIENTS.limeTeal,
+      kicker: 'Small wins',
+      headline: <CountUp value={stats.totalSaved} format={(n) => formatMoney(n, stats.currency)} blurIn />,
+      sub: 'saved with promos & credits',
+    });
+  }
+
   scenes.push({
     id: 'outro',
-    gradient: GRADIENTS.limeTeal,
+    gradient: GRADIENTS.magentaViolet,
     kicker: "That's a wrap",
     headline: <>That's your Uber Wrapped.</>,
     footer: (

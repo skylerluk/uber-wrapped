@@ -1,8 +1,9 @@
-import type { Insights, Roast } from '../types/insights';
+import type { ReactNode } from 'react';
+import type { Insights, Roast, CityBucket, ProductBucket } from '../types/insights';
 import { StatCard } from '../components/StatCard';
 import { SpendOverTime } from '../components/charts/SpendOverTime';
 import { RidesByHour } from '../components/charts/RidesByHour';
-import { formatMoney, formatNumber, formatDate } from '../lib/format';
+import { formatMoney, formatNumber, formatDate, formatDuration } from '../lib/format';
 
 interface DashboardProps {
   insights: Insights;
@@ -13,7 +14,7 @@ interface DashboardProps {
   onShare: () => void;
 }
 
-function Card({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
+function Card({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
   return (
     <section className={`elevated rounded-[20px] border border-hairline bg-surface p-5 ${className ?? ''}`}>
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-dim">{title}</h2>
@@ -22,16 +23,94 @@ function Card({ title, children, className }: { title: string; children: React.R
   );
 }
 
+/** Small stat tile for the "by the numbers" grid. */
+function Tile({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="rounded-2xl border border-hairline bg-surface-2 p-4">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-dim">{label}</p>
+      <p className="mt-1 display-number text-2xl">{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-dim">{hint}</p>}
+    </div>
+  );
+}
+
+/** Horizontal bar list reused for cities and product mix. */
+function BarList({
+  rows,
+  currency,
+}: {
+  rows: { label: string; rides: number; spend: number }[];
+  currency: string | null;
+}) {
+  const max = Math.max(1, ...rows.map((r) => r.rides));
+  return (
+    <ul className="space-y-3">
+      {rows.map((r) => (
+        <li key={r.label}>
+          <div className="mb-1 flex items-baseline justify-between text-sm">
+            <span className="font-medium">{r.label}</span>
+            <span className="tabular-nums text-dim">
+              {formatNumber(r.rides)} · {formatMoney(r.spend, currency)}
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-surface-3">
+            <div className="h-full rounded-full bg-white/80" style={{ width: `${(r.rides / max) * 100}%` }} />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onReplay, onShare }: DashboardProps) {
   const { stats } = insights;
+  const a = stats.available;
   const roasts = [...insights.roasts, ...aiRoasts].sort((a, b) => b.funScore - a.funScore);
-  const maxCityRides = Math.max(1, ...stats.cityBreakdown.map((c) => c.rides));
+
+  const cityRows = stats.cityBreakdown.slice(0, 6).map((c: CityBucket) => ({
+    label: c.city,
+    rides: c.rides,
+    spend: c.spend,
+  }));
+  const productRows = stats.productMix.slice(0, 6).map((p: ProductBucket) => ({
+    label: p.product,
+    rides: p.rides,
+    spend: p.spend,
+  }));
+
+  // "By the numbers" tiles — each only included when its source data exists.
+  const tiles: ReactNode[] = [];
+  if (a.duration)
+    tiles.push(
+      <Tile key="hours" label="Time in car" value={formatDuration(stats.totalDurationSeconds)} hint={`avg ${formatDuration(stats.avgDurationSeconds)}/ride`} />,
+    );
+  if (a.distance && stats.avgPerMile > 0)
+    tiles.push(<Tile key="permile" label="Per mile" value={formatMoney(stats.avgPerMile, stats.currency, { decimals: true })} />);
+  if (a.perMinute && stats.avgPerMinute > 0)
+    tiles.push(<Tile key="permin" label="Per minute" value={formatMoney(stats.avgPerMinute, stats.currency, { decimals: true })} />);
+  if (stats.avgFare > 0)
+    tiles.push(<Tile key="avgfare" label="Avg fare" value={formatMoney(stats.avgFare, stats.currency)} />);
+  if (a.surge && stats.totalSurgeFare > 0)
+    tiles.push(<Tile key="surge" label="Surge pricing" value={formatMoney(stats.totalSurgeFare, stats.currency)} hint={`${formatNumber(stats.surgedRides)} surged`} />);
+  if (a.tolls && stats.totalTolls > 0)
+    tiles.push(<Tile key="tolls" label="Tolls" value={formatMoney(stats.totalTolls, stats.currency)} />);
+  if (a.fees && stats.totalFees > 0)
+    tiles.push(<Tile key="fees" label="Booking & service fees" value={formatMoney(stats.totalFees, stats.currency)} />);
+  if (a.savings && stats.totalSaved > 0)
+    tiles.push(<Tile key="saved" label="Saved (promos/credits)" value={formatMoney(stats.totalSaved, stats.currency)} />);
+  if (stats.airportRides > 0)
+    tiles.push(<Tile key="airport" label="Airport runs" value={formatNumber(stats.airportRides)} />);
+  if (stats.scheduledRides > 0)
+    tiles.push(<Tile key="sched" label="Scheduled" value={formatNumber(stats.scheduledRides)} />);
+
+  const showSpendChart = stats.totalSpendByMonth.length > 1;
+  const showCharts = showSpendChart || a.time;
 
   return (
     <main className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-black tracking-tight sm:text-5xl">Your Uber Wrapped</h1>
+          <h1 className="display-number text-4xl sm:text-5xl">Your Uber Wrapped</h1>
           <p className="mt-1 text-dim">{stats.dateRange.label}</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -60,79 +139,111 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
       <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Total spend" value={stats.totalSpend} format={(n) => formatMoney(n, stats.currency)} />
         <StatCard label="Total rides" value={stats.totalRides} />
-        <StatCard label="Distance" value={stats.totalDistanceMiles} format={(n) => `${formatNumber(n)} mi`} />
-        <StatCard label="Date range" display={stats.dateRange.label} hint={`${formatNumber(stats.canceledRides)} canceled`} />
+        {a.distance && (
+          <StatCard label="Distance" value={stats.totalDistanceMiles} format={(n) => `${formatNumber(n)} mi`} />
+        )}
+        <StatCard
+          label="Date range"
+          display={stats.dateRange.label}
+          hint={stats.canceledRides > 0 ? `${formatNumber(stats.canceledRides)} canceled` : undefined}
+        />
       </div>
 
       {/* Charts */}
-      <div className="mb-6 grid gap-4 lg:grid-cols-2">
-        <Card title="Spend over time">
-          {stats.totalSpendByMonth.length > 1 ? (
-            <SpendOverTime data={stats.totalSpendByMonth} currency={stats.currency} />
-          ) : (
-            <p className="py-10 text-center text-sm text-dim">Not enough months to chart.</p>
+      {showCharts && (
+        <div className="mb-6 grid gap-4 lg:grid-cols-2">
+          {showSpendChart && (
+            <Card title="Spend over time">
+              <SpendOverTime data={stats.totalSpendByMonth} currency={stats.currency} />
+            </Card>
           )}
-        </Card>
-        <Card title="Rides by hour of day">
-          <RidesByHour ridesByHour={stats.ridesByHour} />
-        </Card>
-      </div>
+          {a.time && (
+            <Card title="Rides by hour of day">
+              <RidesByHour ridesByHour={stats.ridesByHour} />
+            </Card>
+          )}
+        </div>
+      )}
 
-      {/* Top cities */}
-      <Card title="Top cities" className="mb-6">
-        {stats.cityBreakdown.length === 0 ? (
-          <p className="text-sm text-dim">No city data.</p>
-        ) : (
-          <ul className="space-y-3">
-            {stats.cityBreakdown.slice(0, 6).map((c) => (
-              <li key={c.city}>
-                <div className="mb-1 flex items-baseline justify-between text-sm">
-                  <span className="font-medium">{c.city}</span>
-                  <span className="tabular-nums text-dim">
-                    {formatNumber(c.rides)} rides · {formatMoney(c.spend, stats.currency)}
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-surface-2">
-                  <div
-                    className="h-full rounded-full bg-white/80"
-                    style={{ width: `${(c.rides / maxCityRides) * 100}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      {/* By the numbers */}
+      {tiles.length > 0 && (
+        <Card title="By the numbers" className="mb-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{tiles}</div>
+        </Card>
+      )}
+
+      {/* Cities + product mix */}
+      {(a.city || a.product) && (
+        <div className="mb-6 grid gap-4 lg:grid-cols-2">
+          {a.city && (
+            <Card title="Top cities">
+              <BarList rows={cityRows} currency={stats.currency} />
+            </Card>
+          )}
+          {a.product && (
+            <Card title="Product mix">
+              <BarList rows={productRows} currency={stats.currency} />
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Payment + cancellations */}
+      {(a.payment || stats.canceledRides > 0) && (
+        <div className="mb-6 grid gap-4 lg:grid-cols-2">
+          {a.payment && (
+            <Card title="Payment method">
+              <ul className="space-y-2 text-sm">
+                {stats.paymentSplit.map((p) => (
+                  <li key={p.method} className="flex justify-between">
+                    <span className="font-medium">{p.method.replace(/_/g, ' ')}</span>
+                    <span className="tabular-nums text-dim">{formatNumber(p.count)}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+          {stats.canceledRides > 0 && (
+            <Card title="Cancellations">
+              <p className="display-number text-3xl">{formatNumber(stats.riderCanceledRides || stats.canceledRides)}</p>
+              <p className="mt-1 text-xs text-dim">
+                rides canceled
+                {stats.cancellationFeesPaid > 0 && ` · ${formatMoney(stats.cancellationFeesPaid, stats.currency)} in fees`}
+              </p>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Superlatives */}
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Card title="Most expensive">
-          <p className="font-display text-2xl font-bold">
-            {stats.mostExpensiveTrip?.amount != null ? formatMoney(stats.mostExpensiveTrip.amount, stats.currency) : '—'}
-          </p>
-          <p className="mt-1 text-xs text-dim">
-            {stats.mostExpensiveTrip?.city ?? '—'} · {formatDate(stats.mostExpensiveTrip?.date ?? null)}
-          </p>
-        </Card>
-        <Card title="Cheapest">
-          <p className="font-display text-2xl font-bold">
-            {stats.cheapestTrip?.amount != null ? formatMoney(stats.cheapestTrip.amount, stats.currency) : '—'}
-          </p>
-          <p className="mt-1 text-xs text-dim">{stats.cheapestTrip?.city ?? '—'}</p>
-        </Card>
-        <Card title="Longest trip">
-          <p className="font-display text-2xl font-bold">
-            {stats.longestTrip?.distanceMiles != null ? `${formatNumber(stats.longestTrip.distanceMiles)} mi` : '—'}
-          </p>
-          <p className="mt-1 text-xs text-dim">{stats.longestTrip?.city ?? '—'}</p>
-        </Card>
+        {stats.mostExpensiveTrip?.amount != null && (
+          <Card title="Most expensive">
+            <p className="display-number text-2xl">{formatMoney(stats.mostExpensiveTrip.amount, stats.currency)}</p>
+            <p className="mt-1 text-xs text-dim">
+              {stats.mostExpensiveTrip.city ?? '—'} · {formatDate(stats.mostExpensiveTrip.date)}
+            </p>
+          </Card>
+        )}
+        {a.distance && stats.longestTrip?.distanceMiles != null && (
+          <Card title="Longest trip">
+            <p className="display-number text-2xl">{formatNumber(stats.longestTrip.distanceMiles)} mi</p>
+            <p className="mt-1 text-xs text-dim">{stats.longestTrip.city ?? '—'}</p>
+          </Card>
+        )}
+        {a.duration && stats.longestDurationTrip?.durationSeconds != null && (
+          <Card title="Longest ride">
+            <p className="display-number text-2xl">{formatDuration(stats.longestDurationTrip.durationSeconds)}</p>
+            <p className="mt-1 text-xs text-dim">{stats.longestDurationTrip.city ?? '—'}</p>
+          </Card>
+        )}
       </div>
 
       {/* Roast wall */}
       <Card title="Fun facts & roasts">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {aiPending && (
-            <div className="flex animate-pulse items-center justify-center rounded-xl border border-dashed border-hairline bg-surface-2 p-4 text-sm text-dim">
+            <div className="flex animate-pulse items-center justify-center rounded-2xl border border-dashed border-hairline bg-surface-2 p-4 text-sm text-dim">
               ✨ summoning more roasts…
             </div>
           )}

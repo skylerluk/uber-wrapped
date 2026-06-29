@@ -20,6 +20,13 @@ export const AggregatePayloadSchema = z
     favoriteTimeOfDay: z
       .enum(['Late Night', 'Morning', 'Afternoon', 'Evening', 'Night'])
       .nullable(),
+    hoursInCar: z.number(),
+    totalSurgeFare: z.number(),
+    totalTolls: z.number(),
+    totalSaved: z.number(),
+    airportRides: z.number().int(),
+    scheduledRides: z.number().int(),
+    topProduct: z.string().nullable(),
     comparisons: z
       .array(
         z
@@ -42,6 +49,7 @@ export function looksLikeLeak(payload: AggregatePayload): boolean {
     payload.topCity ?? '',
     payload.busiestDayOfWeek ?? '',
     payload.dateRangeLabel,
+    payload.topProduct ?? '',
     ...payload.comparisons.flatMap((c) => [c.label, c.id]),
   ];
   return strings.some((s) => FORBIDDEN.test(s) || COORD.test(s));

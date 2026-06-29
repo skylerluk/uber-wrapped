@@ -6,9 +6,11 @@ import { parseMoney, parseUberDate, isCompletedStatus } from './coerce';
 import { parseUberExport } from './index';
 import { isCanceledStatus } from './coerce';
 
+import { isTripCompleted } from './coerce';
 import modernCsv from './__fixtures__/modern.csv?raw';
 import legacyCsv from './__fixtures__/legacy.csv?raw';
 import messyCsv from './__fixtures__/messy.csv?raw';
+import realCsv from './__fixtures__/real.csv?raw';
 
 describe('coerce', () => {
   it('strips currency symbols and thousands separators', () => {
@@ -61,13 +63,75 @@ describe('schema detection', () => {
     ]).mapping;
     expect(modern.fareAmount).toBe('Fare Amount');
     expect(modern.status).toBe('Trip or Order Status');
-    expect(modern.beginTime).toBe('Begin Trip Time');
+    expect(modern.beginTimeUtc).toBe('Begin Trip Time');
 
     const legacy = detectSchema(['city', 'Trip Status', 'Pickup Time', 'Distance', 'Fare', 'Currency']).mapping;
     expect(legacy.fareAmount).toBe('Fare');
     expect(legacy.status).toBe('Trip Status');
-    expect(legacy.beginTime).toBe('Pickup Time');
+    expect(legacy.beginTimeUtc).toBe('Pickup Time');
     expect(legacy.distanceMiles).toBe('Distance');
+  });
+
+  it('maps the REAL snake_case Uber export headers', () => {
+    const m = detectSchema([
+      'city_name',
+      'product_type_name',
+      'status',
+      'is_completed',
+      'begintrip_timestamp_utc',
+      'begintrip_timestamp_local',
+      'trip_distance_miles',
+      'trip_duration_seconds',
+      'fare_amount',
+      'currency_code',
+      'surge_fare_local',
+      'toll_amount_local',
+      'profile_type',
+      'card_number',
+    ]).mapping;
+    // previously-unmapped fields now resolve:
+    expect(m.city).toBe('city_name');
+    expect(m.productType).toBe('product_type_name');
+    expect(m.distanceMiles).toBe('trip_distance_miles');
+    expect(m.durationSeconds).toBe('trip_duration_seconds');
+    expect(m.beginTimeUtc).toBe('begintrip_timestamp_utc');
+    expect(m.beginTimeLocal).toBe('begintrip_timestamp_local');
+    expect(m.isCompleted).toBe('is_completed');
+    expect(m.fareAmount).toBe('fare_amount');
+    expect(m.fareCurrency).toBe('currency_code');
+    expect(m.surgeFare).toBe('surge_fare_local');
+    expect(m.tollAmount).toBe('toll_amount_local');
+    expect(m.paymentType).toBe('profile_type');
+    expect(m.cardLast4).toBe('card_number');
+  });
+});
+
+describe('real export parsing', () => {
+  it('parses snake_case rows; is_completed drives completion', () => {
+    const out = parseTripsCsv(realCsv);
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    const { trips } = out.result;
+    expect(trips).toHaveLength(5);
+
+    const completed = trips.filter(isTripCompleted);
+    expect(completed).toHaveLength(4); // 4 is_completed=true, 1 rider_canceled
+
+    // previously-empty fields now populated:
+    expect(completed.every((t) => t.city != null)).toBe(true);
+    expect(completed.every((t) => t.beginTime != null)).toBe(true);
+    expect(completed.every((t) => t.distanceMiles != null)).toBe(true);
+
+    const spend = completed.reduce((s, t) => s + (t.fareAmount ?? 0), 0);
+    expect(spend).toBeCloseTo(351.72, 2);
+
+    // local wall-clock differs from UTC (used for time-of-day stats)
+    const first = trips[0];
+    expect(first.beginTime?.getUTCHours()).toBe(18);
+    expect(first.beginTimeLocal?.getUTCHours()).toBe(14);
+
+    // card is reduced to last 4, client-side only
+    expect(first.cardLast4).toBe('9876');
   });
 });
 

@@ -223,6 +223,110 @@ function avgFareRoast(stats: Stats): Roast | null {
   };
 }
 
+function surgeTaxRoast(stats: Stats): Roast | null {
+  if (stats.totalSurgeFare <= 0) return null;
+  const avg = stats.avgSurgeMultiplier > 1 ? `, averaging ${stats.avgSurgeMultiplier.toFixed(1)}×` : '';
+  return {
+    id: 'money-surge-tax',
+    category: 'behavior',
+    headline: `${money(stats.totalSurgeFare, stats.currency)} in surge pricing`,
+    sub: `${fmt(stats.surgedRides)} rides caught a surge${avg}. The impatience tax is real. ⚡`,
+    emoji: '⚡',
+    severity: stats.totalSurgeFare >= 200 ? 'spicy' : 'medium',
+    value: stats.totalSurgeFare,
+    funScore: 71,
+  };
+}
+
+function tollsRoast(stats: Stats): Roast | null {
+  if (stats.totalTolls <= 0) return null;
+  return {
+    id: 'money-tolls',
+    category: 'behavior',
+    headline: `${money(stats.totalTolls, stats.currency)} just in tolls`,
+    sub: `Bridges and tunnels don't come free. 🌉`,
+    emoji: '🌉',
+    severity: 'light',
+    value: stats.totalTolls,
+    funScore: 54,
+  };
+}
+
+function savingsRoast(stats: Stats): Roast | null {
+  if (stats.totalSaved <= 0) return null;
+  return {
+    id: 'money-saved',
+    category: 'behavior',
+    headline: `You saved ${money(stats.totalSaved, stats.currency)} with promos & credits`,
+    sub: `A small win against the fare. 🎟️`,
+    emoji: '🎟️',
+    severity: 'light',
+    value: stats.totalSaved,
+    funScore: 60,
+  };
+}
+
+function airportRoast(stats: Stats): Roast | null {
+  if (stats.airportRides < 2) return null;
+  return {
+    id: 'behavior-airport',
+    category: 'behavior',
+    headline: `${fmt(stats.airportRides)} airport runs`,
+    sub: `Someone's always catching a flight. ✈️`,
+    emoji: '✈️',
+    severity: 'light',
+    value: stats.airportRides,
+    funScore: 59,
+  };
+}
+
+function timeInCarRoast(stats: Stats): Roast | null {
+  const hours = stats.totalDurationSeconds / 3600;
+  if (hours < 1) return null;
+  const movies = Math.round(hours / 2);
+  return {
+    id: 'time-in-car',
+    category: 'time',
+    headline: `${fmt(hours)} hours in the back of an Uber`,
+    sub: movies >= 1 ? `That's about ${fmt(movies)} movies you could've watched. ⏱️` : `Time flies in traffic. ⏱️`,
+    emoji: '⏱️',
+    severity: hours >= 100 ? 'spicy' : 'medium',
+    value: hours,
+    funScore: 69,
+  };
+}
+
+function cancellationFeesRoast(stats: Stats): Roast | null {
+  if (stats.cancellationFeesPaid <= 0) return null;
+  return {
+    id: 'behavior-cancellation-fees',
+    category: 'behavior',
+    headline: `${money(stats.cancellationFeesPaid, stats.currency)} in cancellation fees`,
+    sub: `${fmt(stats.riderCanceledRides)} rides you bailed on. Commitment issues? 👻`,
+    emoji: '👻',
+    severity: 'medium',
+    value: stats.cancellationFeesPaid,
+    funScore: 58,
+  };
+}
+
+function productLoyaltyRoast(stats: Stats): Roast | null {
+  const top = stats.productMix[0];
+  if (!top || stats.totalRides < 5) return null;
+  const pct = Math.round((top.rides / stats.totalRides) * 100);
+  if (pct < 50) return null;
+  return {
+    id: 'behavior-product-loyalty',
+    category: 'behavior',
+    headline: `${pct}% of your rides were ${top.product}`,
+    sub: `A creature of habit. 🚗`,
+    emoji: '🚗',
+    severity: 'light',
+    value: pct,
+    funScore: 53,
+  };
+}
+
 /** Build the ranked roast list (6–10 strong candidates when data allows). */
 export function buildRoasts(stats: Stats): Roast[] {
   const candidates = [
@@ -235,6 +339,13 @@ export function buildRoasts(stats: Stats): Roast[] {
     mostExpensiveRoast(stats),
     busyDayRoast(stats),
     avgFareRoast(stats),
+    surgeTaxRoast(stats),
+    tollsRoast(stats),
+    savingsRoast(stats),
+    airportRoast(stats),
+    timeInCarRoast(stats),
+    cancellationFeesRoast(stats),
+    productLoyaltyRoast(stats),
   ].filter((r): r is Roast => r !== null);
 
   return candidates.sort((a, b) => b.funScore - a.funScore);

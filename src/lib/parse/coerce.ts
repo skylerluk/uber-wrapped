@@ -1,5 +1,7 @@
 // Careful, defensive coercion of raw CSV string cells into typed values.
 
+import type { Trip } from '../../types/trip';
+
 /** Strip currency symbols, thousands separators, and whitespace; parse to float. */
 export function parseMoney(raw: unknown): number | null {
   if (raw == null) return null;
@@ -67,6 +69,23 @@ export function cleanString(raw: unknown): string | null {
   return s ? s : null;
 }
 
+/** Parse a boolean cell ("true"/"false", "1"/"0", "yes"/"no"). Null if blank/unknown. */
+export function parseBool(raw: unknown): boolean | null {
+  if (raw == null) return null;
+  const s = String(raw).trim().toLowerCase();
+  if (s === '') return null;
+  if (s === 'true' || s === '1' || s === 'yes' || s === 't') return true;
+  if (s === 'false' || s === '0' || s === 'no' || s === 'f') return false;
+  return null;
+}
+
+/** Extract the last 4 digits from a card field; client-side only. */
+export function lastFour(raw: unknown): string | null {
+  if (raw == null) return null;
+  const digits = String(raw).replace(/\D/g, '');
+  return digits.length >= 4 ? digits.slice(-4) : null;
+}
+
 /** Is this normalized status a completed/fulfilled ride? */
 export function isCompletedStatus(status: string): boolean {
   const s = status.toLowerCase();
@@ -74,7 +93,18 @@ export function isCompletedStatus(status: string): boolean {
   return s.includes('complete') || s.includes('fulfilled');
 }
 
-/** Is this a canceled ride? */
+/** Is this a canceled ride (any party)? */
 export function isCanceledStatus(status: string): boolean {
   return status.toLowerCase().includes('cancel');
+}
+
+/** Specifically a rider-initiated cancellation. */
+export function isRiderCanceledStatus(status: string): boolean {
+  return status.toLowerCase().includes('rider_cancel') || status.toLowerCase().includes('ridercancel');
+}
+
+/** Completed? Prefer the `is_completed` boolean; fall back to status string. */
+export function isTripCompleted(trip: Trip): boolean {
+  if (trip.isCompleted != null) return trip.isCompleted;
+  return isCompletedStatus(trip.status);
 }

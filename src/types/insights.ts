@@ -3,10 +3,38 @@
 export interface TripRef {
   amount: number | null;
   distanceMiles: number | null;
+  durationSeconds: number | null;
   date: Date | null;
   city: string | null;
   /** "Begin → Dropoff" when both addresses exist, else null. */
   route: string | null;
+}
+
+export interface ProductBucket {
+  product: string;
+  rides: number;
+  spend: number;
+}
+
+export interface PaymentBucket {
+  method: string;
+  count: number;
+}
+
+/** Which optional panels have backing data (drives conditional UI). */
+export interface StatsAvailability {
+  city: boolean;
+  distance: boolean;
+  time: boolean;
+  duration: boolean;
+  surge: boolean;
+  tolls: boolean;
+  fees: boolean;
+  savings: boolean;
+  product: boolean;
+  payment: boolean;
+  perMinute: boolean;
+  cancellationFees: boolean;
 }
 
 export interface MonthBucket {
@@ -70,7 +98,36 @@ export interface Stats {
   firstEverRide: TripRef | null;
   longestGapBetweenRides: { days: number; from: Date; to: Date } | null;
   mostRidesInOneDay: { date: string; count: number } | null;
-  lateNightRides: number; // rides between 00:00–04:59
+  lateNightRides: number; // rides between 00:00–04:59 (local)
+
+  // Duration
+  totalDurationSeconds: number;
+  avgDurationSeconds: number;
+  longestDurationTrip: TripRef | null;
+
+  // Money depth
+  totalSurgeFare: number;
+  totalTolls: number;
+  totalFees: number; // booking + service
+  totalSaved: number; // promotions + credits
+  avgPerMile: number;
+  avgPerMinute: number;
+
+  // Behavior
+  surgedRides: number;
+  avgSurgeMultiplier: number; // average multiplier among surged rides
+  airportRides: number;
+  scheduledRides: number;
+  sharedRides: number;
+  productMix: ProductBucket[];
+  premiumShare: number; // 0–1 fraction on premium products
+  paymentSplit: PaymentBucket[];
+
+  // Cancellations
+  riderCanceledRides: number;
+  cancellationFeesPaid: number;
+
+  available: StatsAvailability;
 }
 
 export type RoastCategory =
@@ -127,6 +184,14 @@ export interface AggregatePayload {
   lateNightRides: number;
   busiestDayOfWeek: string | null;
   favoriteTimeOfDay: TimeOfDayBucket | null;
+  // Extra anonymized aggregates (no addresses, coords, or card data).
+  hoursInCar: number;
+  totalSurgeFare: number;
+  totalTolls: number;
+  totalSaved: number;
+  airportRides: number;
+  scheduledRides: number;
+  topProduct: string | null;
   /** Pre-computed comparison tiers (label + multiple), already anonymized. */
   comparisons: { id: string; label: string; multiple: number }[];
 }

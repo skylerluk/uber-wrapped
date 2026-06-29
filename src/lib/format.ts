@@ -23,6 +23,16 @@ export function pluralize(count: number, singular: string, plural = `${singular}
   return `${formatNumber(count)} ${count === 1 ? singular : plural}`;
 }
 
+/** Seconds → "Xh Ym" / "Ym" / "Ys". */
+export function formatDuration(seconds: number): string {
+  const s = Math.round(seconds);
+  const h = Math.floor(s / 3600);
+  const m = Math.round((s % 3600) / 60);
+  if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  if (m > 0) return `${m}m`;
+  return `${s}s`;
+}
+
 /** "2023-08" -> "Aug '23" */
 export function formatMonthLabel(ym: string): string {
   const [y, m] = ym.split('-').map(Number);

@@ -7,20 +7,45 @@ import { buildInsights, toAggregatePayload } from './index';
 function trip(p: Partial<Trip>): Trip {
   return {
     status: 'completed',
+    isCompleted: null,
     city: null,
     productType: null,
     fareAmount: null,
     currency: 'USD',
     distanceMiles: null,
-    requestTime: null,
+    durationSeconds: null,
     beginTime: null,
+    beginTimeLocal: null,
+    requestTime: null,
     dropoffTime: null,
+    timezone: null,
     beginAddress: null,
     dropoffAddress: null,
     beginLat: null,
     beginLng: null,
     dropoffLat: null,
     dropoffLng: null,
+    surgeMultiplier: null,
+    isSurged: null,
+    isShared: null,
+    isScheduled: null,
+    isAirport: null,
+    isCash: null,
+    promotionAmount: null,
+    creditsAmount: null,
+    tollAmount: null,
+    surgeFare: null,
+    bookingFee: null,
+    serviceFee: null,
+    waitTimeFare: null,
+    cancellationFee: null,
+    baseFare: null,
+    perMileFare: null,
+    perMinuteFare: null,
+    cancellationType: null,
+    paymentType: null,
+    cardLast4: null,
+    flow: null,
     ...p,
   };
 }
@@ -28,7 +53,7 @@ const d = (s: string) => new Date(s);
 
 // Known-answer fixture.
 const A = trip({ city: 'San Francisco', fareAmount: 10, distanceMiles: 2, beginTime: d('2023-01-02T14:00:00Z') }); // Mon afternoon
-const B = trip({ city: 'San Francisco', fareAmount: 50, distanceMiles: 5, beginTime: d('2023-01-02T03:00:00Z'), beginAddress: '1 Secret St', dropoffAddress: '2 Hidden Ave', beginLat: 37.123456, beginLng: -122.654321 }); // Mon late-night
+const B = trip({ city: 'San Francisco', fareAmount: 50, distanceMiles: 5, beginTime: d('2023-01-02T03:00:00Z'), beginAddress: '1 Secret St', dropoffAddress: '2 Hidden Ave', beginLat: 37.123456, beginLng: -122.654321, cardLast4: '9876' }); // Mon late-night
 const C = trip({ city: 'Oakland', fareAmount: 20, distanceMiles: 100, beginTime: d('2023-06-15T18:00:00Z') }); // Thu evening
 const D = trip({ city: 'San Francisco', status: 'canceled', fareAmount: null, beginTime: d('2023-07-01T12:00:00Z') });
 const E = trip({ city: 'New York', fareAmount: null, beginTime: d('2023-08-01T09:00:00Z') }); // blank fare, completed
@@ -98,6 +123,57 @@ describe('computeStats', () => {
   });
 });
 
+describe('expanded stats (real-export fields)', () => {
+  const trips = [
+    trip({ city: 'NYC', productType: 'uberX', fareAmount: 24, distanceMiles: 3.5, durationSeconds: 1680, beginTime: d('2022-10-22T18:00:00Z'), beginTimeLocal: d('2022-10-22T14:00:00Z'), surgeFare: 0, tollAmount: 0, bookingFee: 2.5, serviceFee: 0.5, promotionAmount: 0, paymentType: 'BANK_CARD', isCompleted: true }),
+    trip({ city: 'NYC', productType: 'Comfort', fareAmount: 55, distanceMiles: 8, durationSeconds: 2100, beginTime: d('2022-11-05T06:00:00Z'), beginTimeLocal: d('2022-11-05T01:00:00Z'), surgeFare: 18, surgeMultiplier: 1.8, isSurged: true, tollAmount: 4, bookingFee: 2.5, serviceFee: 0.5, promotionAmount: 5, paymentType: 'APPLE_PAY', isCompleted: true }),
+    trip({ city: 'Baltimore', productType: 'uberX', fareAmount: 182.72, distanceMiles: 12, durationSeconds: 2400, beginTime: d('2023-01-15T22:00:00Z'), beginTimeLocal: d('2023-01-15T17:00:00Z'), surgeFare: 40, surgeMultiplier: 2.0, isSurged: true, isAirport: true, tollAmount: 6, bookingFee: 2.5, serviceFee: 0.5, paymentType: 'BANK_CARD', isCompleted: true }),
+    trip({ city: 'Baltimore', status: 'rider_canceled', isCompleted: false, cancellationFee: 3.5, beginTime: d('2023-02-01T12:00:00Z') }),
+    trip({ city: 'DC', productType: 'Black', fareAmount: 90, distanceMiles: 5, durationSeconds: 2520, beginTime: d('2023-03-10T09:00:00Z'), beginTimeLocal: d('2023-03-10T04:00:00Z'), isScheduled: true, promotionAmount: 10, bookingFee: 2.5, serviceFee: 0.5, paymentType: 'BANK_CARD', isCompleted: true }),
+  ];
+  const completed = trips.filter((t) => t.isCompleted);
+  const s = computeStats(trips, completed);
+
+  it('money depth', () => {
+    expect(s.totalSpend).toBeCloseTo(351.72, 2);
+    expect(s.totalSurgeFare).toBeCloseTo(58, 2);
+    expect(s.totalTolls).toBeCloseTo(10, 2);
+    expect(s.totalFees).toBeCloseTo(12, 2); // (2.5+0.5)*4
+    expect(s.totalSaved).toBeCloseTo(15, 2); // promos 5 + 10
+  });
+
+  it('behavior + duration', () => {
+    expect(s.surgedRides).toBe(2);
+    expect(s.avgSurgeMultiplier).toBeCloseTo(1.9, 2);
+    expect(s.airportRides).toBe(1);
+    expect(s.scheduledRides).toBe(1);
+    expect(s.totalDurationSeconds).toBe(8700);
+    expect(s.productMix[0].product).toBe('uberX');
+    expect(s.premiumShare).toBeCloseTo(0.5, 2); // Comfort + Black of 4
+    expect(s.paymentSplit.find((p) => p.method === 'BANK_CARD')?.count).toBe(3);
+  });
+
+  it('cancellations + late-night uses local clock', () => {
+    expect(s.riderCanceledRides).toBe(1);
+    expect(s.cancellationFeesPaid).toBeCloseTo(3.5, 2);
+    expect(s.lateNightRides).toBe(2); // 01:00 and 04:00 local
+  });
+
+  it('availability flags reflect present columns', () => {
+    expect(s.available.surge).toBe(true);
+    expect(s.available.duration).toBe(true);
+    expect(s.available.product).toBe(true);
+    expect(s.available.payment).toBe(true);
+  });
+
+  it('produces the new roasts', () => {
+    const roasts = buildRoasts(s);
+    expect(roasts.find((r) => r.id === 'money-surge-tax')).toBeDefined();
+    expect(roasts.find((r) => r.id === 'time-in-car')).toBeDefined();
+    expect(roasts.find((r) => r.id === 'money-saved')).toBeDefined();
+  });
+});
+
 describe('roasts', () => {
   it('produces 6+ ranked roasts on rich data and no absurd fractions', () => {
     // Big spender: 200 rides, lots of variety.
@@ -163,24 +239,27 @@ describe('toAggregatePayload — privacy boundary', () => {
     const payload = toAggregatePayload(insights);
     const json = JSON.stringify(payload);
 
-    // The distinctive address + coordinate values from trip B must NOT leak.
+    // The distinctive address + coordinate + card values from trip B must NOT leak.
     expect(json).not.toContain('Secret St');
     expect(json).not.toContain('Hidden Ave');
     expect(json).not.toContain('37.123456');
     expect(json).not.toContain('122.654321');
+    expect(json).not.toContain('9876'); // cardLast4 must never leave the client
 
     // No identifying field names (key-level check; allow-list below is the real guard).
     for (const k of Object.keys(payload)) {
       const lk = k.toLowerCase();
       expect(lk.includes('address')).toBe(false);
-      expect(lk).not.toMatch(/\b(lat|lng|route|coord)\b/);
+      expect(lk).not.toMatch(/\b(lat|lng|route|coord|card)\b/);
     }
 
     // Allow-list of keys only.
     const allowed = new Set([
       'totalSpend', 'currency', 'totalRides', 'totalDistanceMiles', 'dateRangeLabel',
       'topCity', 'distinctCityCount', 'avgFare', 'mostExpensiveFare', 'canceledRides',
-      'lateNightRides', 'busiestDayOfWeek', 'favoriteTimeOfDay', 'comparisons',
+      'lateNightRides', 'busiestDayOfWeek', 'favoriteTimeOfDay', 'hoursInCar',
+      'totalSurgeFare', 'totalTolls', 'totalSaved', 'airportRides', 'scheduledRides',
+      'topProduct', 'comparisons',
     ]);
     for (const k of Object.keys(payload)) expect(allowed.has(k)).toBe(true);
   });

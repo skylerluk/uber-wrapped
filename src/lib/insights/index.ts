@@ -43,6 +43,13 @@ export function toAggregatePayload(insights: Insights): AggregatePayload {
     lateNightRides: stats.lateNightRides,
     busiestDayOfWeek: stats.busiestDayOfWeek?.day ?? null,
     favoriteTimeOfDay: stats.favoriteTimeOfDay?.bucket ?? null,
+    hoursInCar: Math.round(stats.totalDurationSeconds / 3600),
+    totalSurgeFare: Math.round(stats.totalSurgeFare),
+    totalTolls: Math.round(stats.totalTolls),
+    totalSaved: Math.round(stats.totalSaved),
+    airportRides: stats.airportRides,
+    scheduledRides: stats.scheduledRides,
+    topProduct: stats.productMix[0]?.product ?? null,
     comparisons: roasts
       .filter((r) => r.category === 'purchase' || r.category === 'travel' || r.category === 'food')
       .map((r) => ({ id: r.id, label: r.headline, multiple: Math.round(r.value * 100) / 100 })),
