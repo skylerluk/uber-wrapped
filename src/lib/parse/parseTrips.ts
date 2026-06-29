@@ -85,6 +85,8 @@ export function parseTripsCsv(csvText: string): ParseTripsOutcome {
       baseFare: parseMoney(get(row, 'baseFare')),
       perMileFare: parseMoney(get(row, 'perMileFare')),
       perMinuteFare: parseMoney(get(row, 'perMinuteFare')),
+      originalFareLocal: parseMoney(get(row, 'originalFareLocal')),
+      originalFareUsd: parseMoney(get(row, 'originalFareUsd')),
 
       cancellationType: cleanString(get(row, 'cancellationType')),
       paymentType: cleanString(get(row, 'paymentType')),

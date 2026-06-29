@@ -46,6 +46,13 @@ export interface Trip {
   perMileFare: number | null;
   perMinuteFare: number | null;
 
+  // The fare in local currency + its USD equivalent, as provided by Uber. Their
+  // ratio gives the exact historical FX rate for this trip's currency, used to
+  // normalize a mixed-currency export to USD without inflating the total.
+  // Optional — older/sparse exports may omit these columns.
+  originalFareLocal?: number | null;
+  originalFareUsd?: number | null;
+
   cancellationType: string | null;
   /** Payment method (e.g. BANK_CARD / APPLE_PAY) — from profile_type. */
   paymentType: string | null;

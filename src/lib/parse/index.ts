@@ -12,6 +12,7 @@ import { unzipUberExport } from './unzip';
 import { parseTripsCsv } from './parseTrips';
 import { parseEatsCsv } from './eats/parseEats';
 import { buildReputation } from './accountFiles';
+import { normalizeToUsd } from './currency';
 import { isTripCompleted, isCanceledStatus } from './coerce';
 import type { EatsOrder, Reputation } from '../../types/eats';
 
@@ -19,6 +20,7 @@ export { unzipTrips, unzipUberExport } from './unzip';
 export { parseTripsCsv } from './parseTrips';
 export { parseEatsCsv, isEatsCompleted, isEatsCanceled } from './eats/parseEats';
 export { buildReputation } from './accountFiles';
+export * from './currency';
 export * from './schema';
 export * from './coerce';
 
@@ -129,21 +131,28 @@ export async function parseUberExport(buffer: ArrayBuffer): Promise<ParseOutcome
       return { ok: false, code: parsed.code, message: parsed.message };
     }
 
-    const allTrips = parsed.result.trips;
-    const completedTrips = allTrips.filter(isTripCompleted);
+    const parsedTrips = parsed.result.trips;
+    const parsedCompleted = parsedTrips.filter(isTripCompleted);
+
+    // Eats (optional). Never fail the whole parse on Eats problems.
+    let parsedEatsOrders: EatsOrder[] = [];
+    if (eats) {
+      const parsedEats = parseEatsCsv(eats.text);
+      if (parsedEats.ok) parsedEatsOrders = parsedEats.result.orders;
+    }
+
+    // Multi-currency normalization: convert everything to USD when the export
+    // spans more than one currency, so totals aren't inflated. Single-currency
+    // exports pass through unchanged.
+    const normalized = normalizeToUsd(parsedTrips, parsedCompleted, parsedEatsOrders);
+    const { allTrips, completedTrips, eatsOrders } = normalized;
+
     const summary = buildSummary(
       allTrips,
       completedTrips,
       parsed.result.mapping,
       trips.path,
     );
-
-    // Eats (optional). Never fail the whole parse on Eats problems.
-    let eatsOrders: EatsOrder[] = [];
-    if (eats) {
-      const parsedEats = parseEatsCsv(eats.text);
-      if (parsedEats.ok) eatsOrders = parsedEats.result.orders;
-    }
 
     // Reputation (optional, non-PII rating + distribution).
     let reputation: Reputation | null = null;
@@ -152,6 +161,11 @@ export async function parseUberExport(buffer: ArrayBuffer): Promise<ParseOutcome
     }
 
     const result: ParseResult = { allTrips, completedTrips, summary, eatsOrders, reputation };
+
+    if (normalized.converted && typeof window !== 'undefined') {
+      // eslint-disable-next-line no-console
+      console.log(`[currency] mixed currencies ${normalized.currencies.join(', ')} → normalized to USD`);
+    }
 
     if (typeof window !== 'undefined') {
       (window as unknown as { __uberWrapped?: ParseResult }).__uberWrapped = result;

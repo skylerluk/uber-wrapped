@@ -47,6 +47,9 @@ export type CanonicalField =
   | 'baseFare'
   | 'perMileFare'
   | 'perMinuteFare'
+  // fare in local + USD (their ratio = exact historical FX rate)
+  | 'originalFareLocal'
+  | 'originalFareUsd'
   // misc
   | 'cancellationType'
   | 'paymentType'
@@ -104,6 +107,8 @@ const SYNONYMS: Record<CanonicalField, string[]> = {
   baseFare: ['basefarelocal', 'basefareusd', 'basefare'],
   perMileFare: ['permilefarelocal', 'permilefareusd', 'permilefare'],
   perMinuteFare: ['perminutefarelocal', 'perminutefareusd', 'perminutefare'],
+  originalFareLocal: ['originalfarelocal'],
+  originalFareUsd: ['originalfareusd'],
 
   cancellationType: ['cancellationtype'],
   paymentType: ['profiletype', 'paymenttype'],
