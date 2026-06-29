@@ -3,7 +3,8 @@ import type { Insights, Roast, CityBucket, ProductBucket } from '../types/insigh
 import { StatCard } from '../components/StatCard';
 import { SpendOverTime } from '../components/charts/SpendOverTime';
 import { RidesByHour } from '../components/charts/RidesByHour';
-import { formatMoney, formatNumber, formatDate, formatDuration } from '../lib/format';
+import { SpendByYear } from '../components/charts/SpendByYear';
+import { formatMoney, formatNumber, formatDate, formatDuration, formatMonthLabel } from '../lib/format';
 
 interface DashboardProps {
   insights: Insights;
@@ -12,6 +13,7 @@ interface DashboardProps {
   onRestart: () => void;
   onReplay: () => void;
   onShare: () => void;
+  onPickAnother?: () => void;
 }
 
 function Card({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
@@ -62,9 +64,11 @@ function BarList({
   );
 }
 
-export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onReplay, onShare }: DashboardProps) {
+export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onReplay, onShare, onPickAnother }: DashboardProps) {
   const { stats } = insights;
   const a = stats.available;
+  const at = insights.allTime;
+  const yoyByYear = new Map((at?.yoy ?? []).map((y) => [y.year, y]));
   const roasts = [...insights.roasts, ...aiRoasts].sort((a, b) => b.funScore - a.funScore);
 
   const cityRows = stats.cityBreakdown.slice(0, 6).map((c: CityBucket) => ({
@@ -110,8 +114,12 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
     <main className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="display-number text-4xl sm:text-5xl">Your Uber Wrapped</h1>
-          <p className="mt-1 text-dim">{stats.dateRange.label}</p>
+          <h1 className="display-number text-4xl sm:text-5xl">
+            {insights.meta.timeframe.kind === 'all' ? 'Your Uber Wrapped' : `${insights.meta.label} Wrapped`}
+          </h1>
+          <p className="mt-1 text-dim">
+            {insights.meta.timeframe.kind === 'all' ? `All Time · ${stats.dateRange.label}` : stats.dateRange.label}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -126,6 +134,14 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
           >
             Replay story
           </button>
+          {onPickAnother && (
+            <button
+              onClick={onPickAnother}
+              className="rounded-full border border-hairline px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-2"
+            >
+              Pick another
+            </button>
+          )}
           <button
             onClick={onRestart}
             className="rounded-full border border-hairline px-5 py-2.5 text-sm font-semibold text-dim transition-colors hover:bg-surface-2 hover:text-text"
@@ -148,6 +164,65 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
           hint={stats.canceledRides > 0 ? `${formatNumber(stats.canceledRides)} canceled` : undefined}
         />
       </div>
+
+      {/* All-time: years overview */}
+      {at && at.byYear.length > 1 && (
+        <>
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard label="Years active" display={at.spanLabel || String(at.yearsActive)} />
+            {at.peakYearBySpend != null && <StatCard label="Peak year" display={String(at.peakYearBySpend)} />}
+            {at.firstRide && <StatCard label="First ride" display={formatDate(at.firstRide)} />}
+            <StatCard label="Cities all-time" value={at.distinctCitiesAllTime} />
+          </div>
+
+          <Card title="Spend by year" className="mb-6">
+            <SpendByYear data={at.byYear} currency={stats.currency} peakYear={at.peakYearBySpend} />
+            <div className="mt-5 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wider text-dim">
+                    <th className="pb-2 font-medium">Year</th>
+                    <th className="pb-2 text-right font-medium">Spend</th>
+                    <th className="pb-2 text-right font-medium">Rides</th>
+                    <th className="pb-2 text-right font-medium">Distance</th>
+                    <th className="pb-2 text-right font-medium">YoY</th>
+                  </tr>
+                </thead>
+                <tbody className="tabular-nums">
+                  {[...at.byYear].reverse().map((y) => {
+                    const d = yoyByYear.get(y.year);
+                    const pct = d?.spendPct;
+                    return (
+                      <tr key={y.year} className="border-t border-hairline">
+                        <td className="py-2 font-semibold">{y.year}</td>
+                        <td className="py-2 text-right">{formatMoney(y.spend, stats.currency)}</td>
+                        <td className="py-2 text-right text-dim">{formatNumber(y.rides)}</td>
+                        <td className="py-2 text-right text-dim">{formatNumber(y.distance)} mi</td>
+                        <td className={`py-2 text-right ${pct == null ? 'text-faint' : pct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {pct == null ? '—' : `${pct >= 0 ? '▲' : '▼'} ${Math.abs(Math.round(pct))}%`}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {at.spendMilestones.length > 0 && (
+            <Card title="Milestones" className="mb-6">
+              <ul className="flex flex-wrap gap-2 text-sm">
+                {at.spendMilestones.map((m) => (
+                  <li key={m.amount} className="rounded-full border border-hairline bg-surface-2 px-3 py-1.5">
+                    <span className="font-semibold">{formatMoney(m.amount, stats.currency)}</span>{' '}
+                    <span className="text-dim">· {formatMonthLabel(m.month)}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </>
+      )}
 
       {/* Charts */}
       {showCharts && (

@@ -27,6 +27,14 @@ export const AggregatePayloadSchema = z
     airportRides: z.number().int(),
     scheduledRides: z.number().int(),
     topProduct: z.string().nullable(),
+    timeframeLabel: z.string(),
+    byYear: z
+      .array(z.object({ year: z.number().int(), spend: z.number(), rides: z.number().int() }).strict())
+      .max(40)
+      .optional(),
+    peakYear: z.number().int().nullable().optional(),
+    topYoYPct: z.number().nullable().optional(),
+    yearsActive: z.number().int().optional(),
     comparisons: z
       .array(
         z

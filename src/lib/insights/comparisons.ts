@@ -37,6 +37,28 @@ export const FOOD: PriceRef[] = [
   { id: 'innout', label: 'an In-N-Out Double-Double', plural: 'In-N-Out Double-Doubles', unitPrice: 5.5, emoji: '🍔' },
 ];
 
+// Big-ticket items for ALL-TIME cumulative spend (much larger scale).
+export const ALLTIME_PURCHASES: PriceRef[] = [
+  { id: 'house-downpayment', label: 'a down payment on a house', plural: 'house down payments', unitPrice: 60000, emoji: '🏡' },
+  { id: 'tesla', label: 'a new Tesla Model 3', plural: 'Teslas', unitPrice: 42000, emoji: '🚗' },
+  { id: 'wedding', label: 'an average wedding', plural: 'weddings', unitPrice: 30000, emoji: '💒' },
+  { id: 'tuition', label: 'a year of in-state tuition', plural: 'years of in-state tuition', unitPrice: 11000, emoji: '🎓' },
+  { id: 'usedcar', label: 'a used 2018 Subaru Outback', plural: 'used Subaru Outbacks', unitPrice: 18000, emoji: '🚙' },
+  { id: 'rentyear', label: 'a year of rent', plural: 'years of rent', unitPrice: 1800 * 12, emoji: '🏠' },
+];
+
+// Travel for all-time (grander).
+export const ALLTIME_TRAVEL: PriceRef[] = [
+  { id: 'rtw', label: 'a round-the-world plane ticket', plural: 'round-the-world tickets', unitPrice: 5000, emoji: '🌐' },
+  { id: 'hawaii', label: 'a week in Hawaii', plural: 'weeks in Hawaii', unitPrice: 2500, emoji: '🌺' },
+  { id: 'tokyo', label: 'a round-trip flight to Tokyo', plural: 'round-trip flights to Tokyo', unitPrice: 1200, emoji: '✈️' },
+];
+
+/** If you'd invested it at 7%/yr over `years`, what would it be worth? */
+export function investedValue(amount: number, years: number): number {
+  return amount * Math.pow(1.07, Math.max(0, years));
+}
+
 // Distance references in miles.
 export const DISTANCE = {
   acrossUSOneWay: 2800, // NYC → LA, approx

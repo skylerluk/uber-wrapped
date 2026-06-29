@@ -155,15 +155,62 @@ export interface Roast {
   funScore: number;
 }
 
+export type Timeframe = { kind: 'all' } | { kind: 'year'; year: number };
+
+export interface YearSummary {
+  year: number;
+  spend: number;
+  rides: number;
+  distance: number;
+  avgFare: number;
+}
+
+export interface YoYDelta {
+  year: number;
+  prevYear: number;
+  spendDelta: number;
+  spendPct: number | null; // null when prev year spend was 0
+  ridesDelta: number;
+  ridesPct: number | null;
+}
+
+export interface Milestone {
+  amount: number; // cumulative threshold crossed (e.g. 1000)
+  month: string; // "YYYY-MM" it was crossed
+}
+
+/** Longitudinal metrics — only present when timeframe is All Time. */
+export interface AllTimeInsights {
+  byYear: YearSummary[]; // ascending by year
+  peakYearBySpend: number | null;
+  peakYearByRides: number | null;
+  firstRide: Date | null;
+  lastRide: Date | null;
+  yearsActive: number;
+  spanLabel: string; // "4 years, 7 months"
+  yoy: YoYDelta[];
+  biggestJump: YoYDelta | null;
+  biggestDrop: YoYDelta | null;
+  spendMilestones: Milestone[];
+  distinctCitiesAllTime: number;
+  citiesByYear: { year: number; cities: number }[];
+  busiestYearByRides: number | null;
+  quietestYearByRides: number | null;
+}
+
 export interface InsightsMeta {
   generatedAt: string;
   hasFareData: boolean;
+  timeframe: Timeframe;
+  label: string; // "All Time" | "2025"
 }
 
 export interface Insights {
   stats: Stats;
   roasts: Roast[];
   meta: InsightsMeta;
+  /** Present only when meta.timeframe.kind === 'all'. */
+  allTime: AllTimeInsights | null;
 }
 
 /**
@@ -192,6 +239,13 @@ export interface AggregatePayload {
   airportRides: number;
   scheduledRides: number;
   topProduct: string | null;
+  /** Timeframe context so the AI can write all-time-aware roasts. */
+  timeframeLabel: string;
+  /** All-time only: compact per-year summary (anonymized) + peak/yoy. */
+  byYear?: { year: number; spend: number; rides: number }[];
+  peakYear?: number | null;
+  topYoYPct?: number | null;
+  yearsActive?: number;
   /** Pre-computed comparison tiers (label + multiple), already anonymized. */
   comparisons: { id: string; label: string; multiple: number }[];
 }
