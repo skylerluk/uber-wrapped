@@ -176,7 +176,7 @@ export function Dashboard({ insights, aiRoasts = [], aiPending, onRestart, onRep
           </div>
 
           <Card title="Spend by year" className="mb-6">
-            <SpendByYear data={at.byYear} currency={stats.currency} />
+            <SpendByYear data={at.byYear} currency={stats.currency} peakYear={at.peakYearBySpend} />
             <div className="mt-5 overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

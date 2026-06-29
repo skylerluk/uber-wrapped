@@ -64,7 +64,7 @@ export function buildAllTimeScenes(insights: Insights, actions: SceneActions): S
       headline: <>Your Uber timeline</>,
       custom: (
         <div className="mx-auto max-w-xl">
-          <SpendByYear data={at.byYear} currency={stats.currency} light height={260} />
+          <SpendByYear data={at.byYear} currency={stats.currency} peakYear={at.peakYearBySpend} light height={260} />
         </div>
       ),
     });

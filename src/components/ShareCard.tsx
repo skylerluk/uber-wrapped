@@ -63,6 +63,65 @@ function ShareCardVisual({ insights }: { insights: Insights }) {
   );
 }
 
+/** Distinct vertical card for the All-Time "Uber story". */
+function AllTimeShareCardVisual({ insights }: { insights: Insights }) {
+  const { stats, roasts, allTime: at } = insights;
+  const g = GRADIENTS.fuchsiaIndigo;
+  const hero = roasts.find((r) => r.id.startsWith('alltime-')) ?? roasts[0];
+
+  return (
+    <div
+      className="relative flex h-[640px] w-[360px] flex-col overflow-hidden rounded-[28px] p-7 text-white"
+      style={{ background: `linear-gradient(165deg, ${g.from}, ${g.to})` }}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-black/30" />
+      <div className="grain absolute inset-0 opacity-40" />
+      <div className="relative flex h-full flex-col">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-bold uppercase tracking-[0.2em]">Uber Wrapped</span>
+          <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-bold uppercase tracking-widest backdrop-blur">
+            All Time
+          </span>
+        </div>
+
+        <div className="mt-8">
+          <p className="text-xs font-semibold uppercase tracking-widest opacity-75">Lifetime spend</p>
+          <p className="display-number text-6xl">{formatMoney(stats.totalSpend, stats.currency)}</p>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest opacity-75">Rides</p>
+            <p className="display-number text-3xl">{formatNumber(stats.totalRides)}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest opacity-75">An Uber person for</p>
+            <p className="text-xl font-bold">{at?.spanLabel || `${at?.yearsActive ?? 0} years`}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest opacity-75">Peak year</p>
+            <p className="display-number text-3xl">{at?.peakYearBySpend ?? '—'}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest opacity-75">Cities</p>
+            <p className="display-number text-3xl">{formatNumber(at?.distinctCitiesAllTime ?? stats.distinctCityCount)}</p>
+          </div>
+        </div>
+
+        {hero && (
+          <div className="mt-auto rounded-2xl bg-black/25 p-4 backdrop-blur-sm">
+            <p className="text-lg font-bold leading-snug">
+              {hero.emoji} {hero.headline}
+            </p>
+          </div>
+        )}
+
+        <p className="mt-4 text-center text-xs opacity-70">uber-wrapped.vercel.app</p>
+      </div>
+    </div>
+  );
+}
+
 interface ShareSheetProps {
   insights: Insights;
   onClose: () => void;
@@ -125,7 +184,11 @@ export function ShareSheet({ insights, onClose }: ShareSheetProps) {
     >
       <div className="flex flex-col items-center gap-5" onClick={(e) => e.stopPropagation()}>
         <div ref={cardRef}>
-          <ShareCardVisual insights={insights} />
+          {insights.meta.timeframe.kind === 'all' && insights.allTime ? (
+            <AllTimeShareCardVisual insights={insights} />
+          ) : (
+            <ShareCardVisual insights={insights} />
+          )}
         </div>
         <div className="flex items-center gap-3">
           <button
