@@ -76,6 +76,10 @@ export interface ParseResult {
   allTrips: Trip[];
   completedTrips: Trip[];
   summary: ParseSummary;
+  /** All Eats orders (any status). Empty when the export has no Eats data. */
+  eatsOrders: import('./eats').EatsOrder[];
+  /** Lifetime reputation (rating + ratings distribution), or null. */
+  reputation: import('./eats').Reputation | null;
 }
 
 export type ParseErrorCode =

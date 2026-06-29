@@ -35,7 +35,7 @@ function App() {
     if (aiCache.current.has(key)) return;
     const insights = all.byTimeframe.get(key);
     if (!insights) return;
-    void fetchAiRoasts(toAggregatePayload(insights)).then((roasts) => {
+    void fetchAiRoasts(toAggregatePayload(insights, all.reputation)).then((roasts) => {
       aiCache.current.set(key, roasts);
       setState((prev) => {
         if (prev.phase !== 'story' && prev.phase !== 'dashboard') return prev;
@@ -69,7 +69,10 @@ function App() {
           setState({ phase: 'idle', error: outcome.message });
           return;
         }
-        const all = buildAllInsights(outcome.result.allTrips, outcome.result.completedTrips);
+        const all = buildAllInsights(outcome.result.allTrips, outcome.result.completedTrips, {
+          eatsOrders: outcome.result.eatsOrders,
+          reputation: outcome.result.reputation,
+        });
         const allTf = all.byTimeframe.get('all');
         if (!allTf || allTf.stats.totalRides === 0) {
           setState({ phase: 'idle', error: 'We parsed the file but found no completed rides to wrap.' });

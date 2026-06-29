@@ -211,6 +211,10 @@ export interface Insights {
   meta: InsightsMeta;
   /** Present only when meta.timeframe.kind === 'all'. */
   allTime: AllTimeInsights | null;
+  /** Eats insights for this timeframe (null when the export has no Eats data). */
+  eats: import('./eats').EatsInsights | null;
+  /** Combined rides+eats headline for this timeframe. */
+  combined: import('./eats').CombinedInsights | null;
 }
 
 /**
@@ -248,4 +252,8 @@ export interface AggregatePayload {
   yearsActive?: number;
   /** Pre-computed comparison tiers (label + multiple), already anonymized. */
   comparisons: { id: string; label: string; multiple: number }[];
+  /** Service-tagged cross-service signals (rides + eats). Anonymized — no PII. */
+  combined?: import('./eats').CombinedRoastSignals;
+  /** Lifetime rating (non-PII number). */
+  rating?: number | null;
 }

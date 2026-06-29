@@ -8,12 +8,17 @@ import type {
   ParseSummary,
   Trip,
 } from '../../types/trip';
-import { unzipTrips } from './unzip';
+import { unzipUberExport } from './unzip';
 import { parseTripsCsv } from './parseTrips';
+import { parseEatsCsv } from './eats/parseEats';
+import { buildReputation } from './accountFiles';
 import { isTripCompleted, isCanceledStatus } from './coerce';
+import type { EatsOrder, Reputation } from '../../types/eats';
 
-export { unzipTrips } from './unzip';
+export { unzipTrips, unzipUberExport } from './unzip';
 export { parseTripsCsv } from './parseTrips';
+export { parseEatsCsv, isEatsCompleted, isEatsCanceled } from './eats/parseEats';
+export { buildReputation } from './accountFiles';
 export * from './schema';
 export * from './coerce';
 
@@ -105,12 +110,21 @@ function logSummary(summary: ParseSummary, candidates: string[]): void {
  */
 export async function parseUberExport(buffer: ArrayBuffer): Promise<ParseOutcome> {
   try {
-    const unzipped = await unzipTrips(buffer);
+    const unzipped = await unzipUberExport(buffer);
     if (!unzipped.ok) {
       return { ok: false, code: unzipped.code, message: unzipped.message };
     }
+    const { trips, eats, profileText, ratingsText } = unzipped.files;
 
-    const parsed = parseTripsCsv(unzipped.csv.text);
+    if (!trips) {
+      return {
+        ok: false,
+        code: 'NO_TRIPS_FILE',
+        message: "Couldn't find a trips file in this zip. Expected a CSV with 'trips' in its name.",
+      };
+    }
+
+    const parsed = parseTripsCsv(trips.text);
     if (!parsed.ok) {
       return { ok: false, code: parsed.code, message: parsed.message };
     }
@@ -121,14 +135,27 @@ export async function parseUberExport(buffer: ArrayBuffer): Promise<ParseOutcome
       allTrips,
       completedTrips,
       parsed.result.mapping,
-      unzipped.csv.path,
+      trips.path,
     );
 
-    const result: ParseResult = { allTrips, completedTrips, summary };
+    // Eats (optional). Never fail the whole parse on Eats problems.
+    let eatsOrders: EatsOrder[] = [];
+    if (eats) {
+      const parsedEats = parseEatsCsv(eats.text);
+      if (parsedEats.ok) eatsOrders = parsedEats.result.orders;
+    }
+
+    // Reputation (optional, non-PII rating + distribution).
+    let reputation: Reputation | null = null;
+    if (profileText || ratingsText) {
+      reputation = buildReputation(profileText, ratingsText);
+    }
+
+    const result: ParseResult = { allTrips, completedTrips, summary, eatsOrders, reputation };
 
     if (typeof window !== 'undefined') {
       (window as unknown as { __uberWrapped?: ParseResult }).__uberWrapped = result;
-      logSummary(summary, unzipped.csv.candidates);
+      logSummary(summary, trips.candidates);
     }
 
     return { ok: true, result };
