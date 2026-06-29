@@ -206,9 +206,11 @@ export function computeStats(allTrips: Trip[], completedTrips: Trip[]): Stats {
   const totalSurgeFare = sum(completedTrips.map((t) => t.surgeFare));
   const totalTolls = sum(completedTrips.map((t) => t.tollAmount));
   const totalFees = sum(completedTrips.map((t) => (t.bookingFee ?? 0) + (t.serviceFee ?? 0)));
+  // Net savings: some promotions are stored negative (reversals), so sum signed
+  // then take magnitude — abs-ing each value would double-count reversals.
   const totalSaved =
-    sum(completedTrips.map((t) => (t.promotionAmount != null ? Math.abs(t.promotionAmount) : 0))) +
-    sum(completedTrips.map((t) => (t.creditsAmount != null ? Math.abs(t.creditsAmount) : 0)));
+    Math.abs(sum(completedTrips.map((t) => t.promotionAmount))) +
+    Math.abs(sum(completedTrips.map((t) => t.creditsAmount)));
   const avgPerMile = totalDistanceMiles > 0 ? totalSpend / totalDistanceMiles : 0;
   const avgPerMinute = totalDurationSeconds > 0 ? totalSpend / (totalDurationSeconds / 60) : 0;
 
